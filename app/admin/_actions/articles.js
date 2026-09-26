@@ -3,15 +3,21 @@ import { z } from 'zod';
 import { requireAdmin, requireStaff } from '@/lib/auth';
 import { action, check, revalidatePublic } from '@/lib/admin/action';
 import { articleSchema, categorySchema } from '@/lib/validation';
+import { autoTranslate, FIELDS } from '@/lib/translate';
+
+const translateMode = (opts) => (['missing', 'all', 'off'].includes(opts?.translate) ? opts.translate : 'missing');
+const pickFields = (row, f) => Object.fromEntries([...f.plain, ...f.rich].map((k) => [k, row[k] || {}]));
 
 const ids = z.array(z.guid()).min(1).max(500);
 
-export async function saveArticle(input) {
+export async function saveArticle(input, opts) {
   return action(async () => {
     const { supabase } = await requireStaff();
     const { id, entity_ids: entityIds, ...row } = articleSchema.parse(input);
     for (const k of ['cover_alt', 'cover_caption', 'author_name']) row[k] = row[k] || null;
     if (!row.published_at) delete row.published_at;
+    const tr = await autoTranslate(pickFields(row, FIELDS.article), FIELDS.article, translateMode(opts));
+    Object.assign(row, tr.record);
     const res = id
       ? await supabase.from('articles').update(row).eq('id', id).select('id,slug,published,published_at,updated_at').single()
       : await supabase.from('articles').insert(row).select('id,slug,published,published_at,updated_at').single();
@@ -21,7 +27,7 @@ export async function saveArticle(input) {
       check(await supabase.from('article_entities').insert([...new Set(entityIds)].map((e) => ({ article_id: saved.id, entity_id: e }))).select('entity_id'));
     }
     revalidatePublic();
-    return saved;
+    return { ...saved, i18n: tr.record, translated: tr.translated, warning: tr.warning };
   });
 }
 
@@ -55,16 +61,18 @@ export async function deleteArticles(input) {
   });
 }
 
-export async function saveCategory(input) {
+export async function saveCategory(input, opts) {
   return action(async () => {
     const { supabase } = await requireStaff();
     const { id, ...row } = categorySchema.parse(input);
+    const tr = await autoTranslate(pickFields(row, FIELDS.category), FIELDS.category, translateMode(opts));
+    Object.assign(row, tr.record);
     const res = id
       ? await supabase.from('categories').update(row).eq('id', id).select('*').single()
       : await supabase.from('categories').insert(row).select('*').single();
     const saved = check(res);
     revalidatePublic();
-    return saved;
+    return { ...saved, warning: tr.warning };
   });
 }
 

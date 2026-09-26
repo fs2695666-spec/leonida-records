@@ -3,10 +3,14 @@ import { z } from 'zod';
 import { requireAdmin, requireStaff } from '@/lib/auth';
 import { action, check, revalidatePublic } from '@/lib/admin/action';
 import { entitySchema, factSchema, relationSchema } from '@/lib/validation';
+import { autoTranslate, FIELDS } from '@/lib/translate';
+
+const translateMode = (opts) => (['missing', 'all', 'off'].includes(opts?.translate) ? opts.translate : 'missing');
+const pickFields = (row, f) => Object.fromEntries([...f.plain, ...f.rich].map((k) => [k, row[k] || {}]));
 
 const ids = z.array(z.guid()).min(1).max(500);
 
-export async function saveEntity(input) {
+export async function saveEntity(input, opts) {
   return action(async () => {
     const { supabase } = await requireStaff();
     const v = entitySchema.parse(input);
@@ -22,6 +26,9 @@ export async function saveEntity(input) {
     if (releaseDate) metadata = { ...metadata, release_date: releaseDate };
     else { const { release_date: _r, ...rest } = metadata; metadata = rest; }
 
+    const tr = await autoTranslate(pickFields(row, FIELDS.entity), FIELDS.entity, translateMode(opts));
+    Object.assign(row, tr.record);
+
     const payload = { ...row, metadata };
     if (!payload.published_at) delete payload.published_at; // DB sets it on first publish
     const res = id
@@ -29,7 +36,7 @@ export async function saveEntity(input) {
       : await supabase.from('entities').insert(payload).select('id,type,slug,updated_at').single();
     const saved = check(res);
     revalidatePublic();
-    return saved;
+    return { ...saved, i18n: tr.record, translated: tr.translated, warning: tr.warning };
   });
 }
 
@@ -63,16 +70,18 @@ export async function deleteEntities(input) {
   });
 }
 
-export async function saveFact(input) {
+export async function saveFact(input, opts) {
   return action(async () => {
     const { supabase } = await requireStaff();
     const { id, ...row } = factSchema.parse(input);
+    const tr = await autoTranslate(pickFields(row, FIELDS.fact), FIELDS.fact, translateMode(opts));
+    Object.assign(row, tr.record);
     const res = id
       ? await supabase.from('facts').update(row).eq('id', id).select('*').single()
       : await supabase.from('facts').insert(row).select('*').single();
     const saved = check(res);
     revalidatePublic();
-    return saved;
+    return { ...saved, warning: tr.warning };
   });
 }
 

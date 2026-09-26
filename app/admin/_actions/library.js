@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { requireAdmin, requireStaff } from '@/lib/auth';
 import { action, check, revalidatePublic, userError } from '@/lib/admin/action';
 import { mediaSchema, sourceSchema, timelineSchema } from '@/lib/validation';
+import { autoTranslate, FIELDS } from '@/lib/translate';
+
+const pickFields = (row, f) => Object.fromEntries([...f.plain, ...f.rich].map((k) => [k, row[k] || {}]));
 
 /** Register files already uploaded to Storage by the browser (or external URLs). */
 export async function registerMedia(items) {
@@ -69,12 +72,14 @@ export async function saveTimeline(input) {
   return action(async () => {
     const { supabase } = await requireStaff();
     const { id, ...row } = timelineSchema.parse(input);
+    const tr = await autoTranslate(pickFields(row, FIELDS.timeline), FIELDS.timeline, 'missing');
+    Object.assign(row, tr.record);
     const res = id
       ? await supabase.from('timeline_events').update(row).eq('id', id).select('*').single()
       : await supabase.from('timeline_events').insert(row).select('*').single();
     const saved = check(res);
     revalidatePublic();
-    return saved;
+    return { ...saved, warning: tr.warning };
   });
 }
 

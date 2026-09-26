@@ -1,0 +1,201 @@
+/* Leonida Records — design tokens & primitives (shared by public site and admin) */
+
+:root {
+  --shell: #fff5f0;
+  --shell-2: #ffece4;
+  --paper: #ffffff;
+  --foam: #eef8fa;
+  --ink: #1d1a3a;
+  --ink-2: #454064;
+  --muted: #787391;
+  --line: rgba(29, 26, 58, 0.12);
+  --line-strong: rgba(29, 26, 58, 0.28);
+
+  --flamingo: #ef4f85;
+  --flamingo-deep: #c9336a;
+  --flamingo-soft: #fbd3e1;
+  --coral: #f77e6a;
+  --peach: #ffd2b8;
+  --sun: #ffdc8a;
+  --sun-soft: #fff1c9;
+  --pool: #3fb9c2;
+  --pool-deep: #1f8c95;
+  --sky: #c4e6f5;
+  --lavender: #cdbef3;
+  --lavender-soft: #ece5ff;
+
+  --ev-confirmed: #17785f;   --ev-confirmed-bg: #d4f2e7;
+  --ev-observed: #1d67a0;    --ev-observed-bg: #d8ebf8;
+  --ev-reported: #8a5a00;    --ev-reported-bg: #ffefc4;
+  --ev-speculation: #6445bd; --ev-speculation-bg: #ebe3ff;
+  --ev-debunked: #b72c43;    --ev-debunked-bg: #ffdce1;
+
+  --sunset: linear-gradient(180deg, #ffdc8a 0%, #ffb99c 36%, #f58fb2 68%, #b8a7f1 100%);
+  --sunset-h: linear-gradient(90deg, #ffdc8a, #ffb99c 35%, #f58fb2 68%, #b8a7f1);
+
+  --font-display: var(--font-bodoni), 'Bodoni 72', 'Didot', Georgia, serif;
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.6rem;
+  --fs-2xl: clamp(1.9rem, 1.2rem + 2.4vw, 2.8rem);
+  --fs-3xl: clamp(2.4rem, 1.2rem + 4vw, 4.2rem);
+  --fs-display: clamp(3.6rem, 1rem + 11vw, 11.5rem);
+
+  --radius-s: 6px;
+  --radius-m: 14px;
+  --radius-l: 28px;
+  --arch: 999px 999px 18px 18px;
+
+  --gutter: clamp(1.1rem, 3.6vw, 3rem);
+  --max: 1380px;
+  --header-h: 68px;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.15, 1);
+  --shadow-lift: 0 1px 0 rgba(29, 26, 58, 0.04), 0 18px 40px -24px rgba(29, 26, 58, 0.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+}
+
+body {
+  margin: 0;
+  background: var(--shell);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+  font-feature-settings: 'kern', 'liga';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img, video, svg { display: block; max-width: 100%; }
+img { height: auto; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, h4 { margin: 0; font-weight: inherit; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; }
+figure { margin: 0; }
+::selection { background: var(--flamingo-soft); color: var(--ink); }
+
+:focus-visible {
+  outline: 2.5px solid var(--flamingo);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: fixed; left: 12px; top: -60px; z-index: 200;
+  background: var(--ink); color: var(--shell); padding: 10px 16px; border-radius: 999px; font-weight: 600;
+  transition: top 0.2s var(--ease);
+}
+.skip-link:focus { top: 12px; }
+
+.display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  --btn-bg: var(--paper);
+  --btn-fg: var(--ink);
+  --btn-bd: var(--line-strong);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55em;
+  min-height: 46px; padding: 0 1.25rem;
+  border: 1px solid var(--btn-bd); border-radius: 999px;
+  background: var(--btn-bg); color: var(--btn-fg);
+  font-weight: 600; font-size: var(--fs-sm); letter-spacing: 0.01em;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { --btn-bd: var(--ink); }
+.btn:active { transform: translateY(1px); }
+.btn--primary { --btn-bg: var(--ink); --btn-fg: var(--shell); --btn-bd: var(--ink); }
+.btn--primary:hover { --btn-bg: var(--flamingo-deep); --btn-bd: var(--flamingo-deep); }
+.btn--flamingo { --btn-bg: var(--flamingo); --btn-fg: #fff; --btn-bd: var(--flamingo); }
+.btn--flamingo:hover { --btn-bg: var(--flamingo-deep); --btn-bd: var(--flamingo-deep); }
+.btn--ghost { --btn-bg: transparent; }
+.btn--small { min-height: 36px; padding: 0 0.9rem; font-size: var(--fs-xs); }
+.btn[disabled], .btn[aria-disabled='true'] { opacity: 0.45; pointer-events: none; }
+
+.link {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat;
+  padding-bottom: 2px; font-weight: 600;
+  transition: background-size 0.25s var(--ease), color 0.2s var(--ease);
+}
+.link:hover { color: var(--flamingo-deep); background-size: 0% 1px; background-position: 100% 100%; }
+
+/* ---------- Evidence badge ---------- */
+.evidence {
+  --ev: var(--ev-observed); --ev-bg: var(--ev-observed-bg);
+  position: relative;
+  display: inline-flex; align-items: center; gap: 0.45em;
+  padding: 0.28em 0.7em 0.3em 0.55em; border-radius: 999px;
+  background: var(--ev-bg); color: var(--ev);
+  font-size: var(--fs-xs); font-weight: 650; line-height: 1.2; white-space: nowrap;
+}
+.evidence::before {
+  content: ''; width: 0.62em; height: 0.62em; border-radius: 50%;
+  background: var(--ev); flex: none;
+}
+.evidence[data-level='CONFIRMED'] { --ev: var(--ev-confirmed); --ev-bg: var(--ev-confirmed-bg); }
+.evidence[data-level='OBSERVED'] { --ev: var(--ev-observed); --ev-bg: var(--ev-observed-bg); }
+.evidence[data-level='REPORTED'] { --ev: var(--ev-reported); --ev-bg: var(--ev-reported-bg); }
+.evidence[data-level='SPECULATION'] { --ev: var(--ev-speculation); --ev-bg: var(--ev-speculation-bg); }
+.evidence[data-level='DEBUNKED'] { --ev: var(--ev-debunked); --ev-bg: var(--ev-debunked-bg); }
+.evidence[data-level='CONFIRMED']::before { box-shadow: 0 0 0 2px var(--ev-bg), 0 0 0 3.5px var(--ev); width: 0.45em; height: 0.45em; margin: 0 0.1em; }
+.evidence[data-level='SPECULATION']::before { background: transparent; border: 1.6px dashed var(--ev); }
+.evidence[data-level='DEBUNKED']::before { border-radius: 1px; transform: rotate(45deg); width: 0.55em; height: 0.12em; box-shadow: none; }
+.evidence[data-level='REPORTED']::before { border-radius: 2px; }
+
+.evidence[data-tip]:hover::after,
+.evidence[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute; left: 0; top: calc(100% + 8px); z-index: 30;
+  width: max-content; max-width: 240px; white-space: normal;
+  padding: 0.6rem 0.75rem; border-radius: 10px;
+  background: var(--ink); color: var(--shell); font-weight: 500; font-size: 0.8rem; line-height: 1.4;
+  box-shadow: var(--shadow-lift);
+}
+
+/* ---------- Sunset stripe rule (retro sunset bands) ---------- */
+.sunset-rule {
+  height: 34px; width: 100%;
+  background:
+    linear-gradient(var(--shell) 0 0) 0 5px / 100% 2px no-repeat,
+    linear-gradient(var(--shell) 0 0) 0 13px / 100% 3px no-repeat,
+    linear-gradient(var(--shell) 0 0) 0 22px / 100% 4px no-repeat,
+    var(--sunset-h);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

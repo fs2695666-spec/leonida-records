@@ -17,6 +17,22 @@ const EVIDENCE = Object.keys(EVIDENCE_LABELS);
 const LOCALIZED = [['title', 'Título'], ['eyebrow', 'Antetítulo'], ['short_description', 'Resumen'], ['quote', 'Cita'], ['description', 'Descripción']];
 
 const filled = (v) => (typeof v === 'string' ? v.trim().length > 0 : Boolean(v && JSON.stringify(v).includes('"text":"')) || Boolean(v && /"type":"(image|youtube|gallery)"/.test(JSON.stringify(v))));
+
+/** Merge server-side automatic translations into the editor state without touching what the user typed meanwhile. */
+function mergeTranslations(cur, res, mode) {
+  if (!res?.i18n || !res.translated?.length) return cur;
+  const next = { ...cur };
+  for (const [f, val] of Object.entries(res.i18n)) {
+    const merged = { ...(cur[f] || {}) };
+    for (const l of res.translated) {
+      if (val?.[l] != null && (mode === 'all' || !filled(cur[f]?.[l]))) merged[l] = val[l];
+    }
+    next[f] = merged;
+  }
+  return next;
+}
+const LANG_NAMES = { en: 'inglés', pt: 'portugués', fr: 'francés' };
+const langList = (ls) => ls.map((l) => LANG_NAMES[l] || l).join(', ').replace(/, ([^,]*)$/, ' y $1');
 const filledLangs = (obj) => LANGS.map((l) => l.code).filter((l) => filled(obj?.[l]));
 
 function initialForm(e, defaultType) {
@@ -33,7 +49,7 @@ function initialForm(e, defaultType) {
   };
 }
 
-export function EntityEditor({ entity, facts = [], relations = [], media = [], sourceOptions, entityOptions, isAdmin, defaultType }) {
+export function EntityEditor({ entity, facts = [], relations = [], media = [], sourceOptions, entityOptions, isAdmin, defaultType, translateEnabled = false }) {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
@@ -71,7 +87,7 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
     return e;
   };
 
-  const save = useCallback(async (overrides = {}, { silent = false } = {}) => {
+  const save = useCallback(async (overrides = {}, { silent = false, translate = 'missing' } = {}) => {
     const f = { ...formRef.current, ...overrides };
     const e = validate(f);
     if (Object.keys(e).length) {
@@ -81,12 +97,14 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
     setSaving(true);
     const payload = { ...f, primary_source_id: f.primary_source_id || null, sort_order: Number(f.sort_order) || 0 };
     const msg = overrides.published === true ? 'Publicada en la web' : overrides.published === false ? 'Pasada a borrador' : 'Cambios guardados';
-    const res = await run(saveEntity(payload), silent ? null : msg, { refresh: !silent });
+    const res = await run(saveEntity(payload, { translate }), silent ? null : msg, { refresh: !silent });
     setSaving(false);
     if (!res) return null;
-    setForm((cur) => ({ ...cur, ...overrides, id: res.id }));
+    setForm((cur) => ({ ...mergeTranslations(cur, res, translate), ...overrides, id: res.id }));
     setDirty(false);
     setSavedAt(res.updated_at);
+    if (res.warning) toast(res.warning, 'error');
+    else if (res.translated?.length && !silent) toast(`Traducido automáticamente al ${langList(res.translated)}`);
     if (!f.id) router.replace(`/admin/content/${res.id}`);
     return res;
   }, [run, router, toast]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -183,8 +201,10 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
               <h2 className="card__title">Textos en {LANGS.find((l) => l.code === lang).label}</h2>
               <LocaleTabs lang={lang} onChange={setLang} filled={['es', 'en', 'pt', 'fr'].filter((l) => filled(form.short_description[l]))} />
             </div>
-            {lang !== 'es' && !filled(form.title[lang]) && (
-              <p className="notice">Si dejas un campo vacío, la web mostrará el texto en español.</p>
+            {lang !== 'es' && (
+              <p className="notice">{translateEnabled
+                ? 'Los campos vacíos se traducen solos desde el español al guardar. Si corriges algo aquí, se respeta tu versión.'
+                : 'Si dejas un campo vacío, la web mostrará el texto en español.'}</p>
             )}
             <TextInput label="Título" required={lang === 'es'} value={form.title[lang] || ''} onChange={(v) => { setLoc('title', lang, v); }} maxLength={160} placeholder={lang !== 'es' ? form.title.es : ''} />
             <TextInput label="Antetítulo" value={form.eyebrow[lang] || ''} onChange={(v) => { setLoc('eyebrow', lang, v); }} maxLength={80} placeholder={lang !== 'es' ? form.eyebrow.es : ''} />
@@ -249,7 +269,19 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
               </table>
             </div>
             <p className="field__hint">Haz clic en una celda para editar ese idioma. Los campos vacíos muestran el español en la web; en los nombres propios («= ES») suele ser lo correcto.</p>
-            <div className="btn-row">
+            {translateEnabled ? (
+              <div className="notice notice--ok">
+                <p><strong>Traducción automática activada.</strong> Al guardar, todo lo que esté vacío en inglés, portugués o francés se traduce solo desde el español.</p>
+                <p>Si cambias el texto en español, pulsa este botón para actualizar las traducciones (reemplaza también las que hayas corregido a mano).</p>
+                <div><button type="button" className="abtn abtn--small" disabled={busy || saving} onClick={async () => {
+                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán los textos en inglés, portugués y francés por una traducción nueva del español.', confirmLabel: 'Traducir' }))) return;
+                  save({}, { translate: 'all' });
+                }}>Volver a traducir todo desde el español</button></div>
+              </div>
+            ) : (
+              <p className="notice">La traducción automática no está activada. Para activarla añade la variable <code>DEEPL_API_KEY</code> en Vercel (lo explica el README). Mientras tanto puedes copiar el español como punto de partida:</p>
+            )}
+            <div className="btn-row" hidden={translateEnabled}>
               {LANGS.filter((l) => l.code !== 'es').map((l) => (
                 <button key={l.code} type="button" className="abtn abtn--small" onClick={() => {
                   setForm((f) => {
@@ -328,6 +360,7 @@ function GalleryManager({ entityId, initial }) {
 const emptyFact = (entityId) => ({ id: null, entity_id: entityId, title: {}, body: {}, status: 'CONFIRMED', source_id: '', timestamp_text: '', sort_order: 0 });
 
 function FactsManager({ entityId, initial, sourceOptions }) {
+  const toast = useToast();
   const [list, setList] = useState(initial);
   const [editing, setEditing] = useState(null);
   const [flang, setFlang] = useState('es');
@@ -340,6 +373,7 @@ function FactsManager({ entityId, initial, sourceOptions }) {
     if (res) {
       setList((l) => (editing.id ? l.map((f) => (f.id === res.id ? res : f)) : [...l, res]));
       setEditing(null);
+      if (res.warning) toast(res.warning, 'error');
     }
   };
   const remove = async (f) => {

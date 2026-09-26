@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Drawer, EmptyState, useAction, useConfirm, slugify } from './ui';
+import { Drawer, EmptyState, useAction, useConfirm, useToast, slugify } from './ui';
 import { EntityPicker, Field, LocaleTabs, Select, TextInput, Toggle } from './fields';
 import { RELATION_LABELS, TYPE_SINGULAR } from './labels';
 import { deleteCategory, saveCategory } from '@/app/admin/_actions/articles';
@@ -18,7 +18,8 @@ export function CategoriesManager({ rows, isAdmin }) {
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const open = (c) => { setLang('es'); setEdit(c ? { ...c } : { id: null, slug: '', name: {}, color: 'flamingo', sort_order: rows.length }); };
-  const save = async () => { if (await run(saveCategory(edit), 'Sección guardada')) setEdit(null); };
+  const toast = useToast();
+  const save = async () => { const r = await run(saveCategory(edit), 'Sección guardada'); if (r) { setEdit(null); if (r.warning) toast(r.warning, 'error'); } };
   const remove = async (c) => {
     if (!(await confirm({ title: `¿Eliminar «${c.name?.es}»?`, message: 'Las noticias de esta sección quedarán sin sección.', confirmLabel: 'Eliminar', danger: true }))) return;
     await run(deleteCategory(c.id), 'Sección eliminada');
@@ -126,7 +127,8 @@ export function TimelineManager({ rows, entities, articles, isAdmin }) {
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const open = (t) => { setLang('es'); setEdit(t ? { ...t, entity_id: t.entity_id || '', article_id: t.article_id || '' } : { id: null, event_date: new Date().toISOString().slice(0, 10), title: {}, detail: {}, kind: 'news', entity_id: '', article_id: '', published: true }); };
-  const save = async () => { if (await run(saveTimeline(edit), 'Evento guardado')) setEdit(null); };
+  const toast = useToast();
+  const save = async () => { const r = await run(saveTimeline(edit), 'Evento guardado'); if (r) { setEdit(null); if (r.warning) toast(r.warning, 'error'); } };
   const remove = async (t) => {
     if (!(await confirm({ title: `¿Eliminar «${t.title?.es}»?`, confirmLabel: 'Eliminar', danger: true }))) return;
     await run(deleteTimeline(t.id), 'Evento eliminado');

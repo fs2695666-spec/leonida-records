@@ -22,6 +22,23 @@ const toLocal = (iso) => {
 };
 const fromLocal = (v) => (v ? new Date(v).toISOString() : null);
 
+
+/** Merge server-side automatic translations into the editor state without touching what the user typed meanwhile. */
+function mergeTranslations(cur, res, mode) {
+  if (!res?.i18n || !res.translated?.length) return cur;
+  const next = { ...cur };
+  for (const [f, val] of Object.entries(res.i18n)) {
+    const merged = { ...(cur[f] || {}) };
+    for (const l of res.translated) {
+      if (val?.[l] != null && (mode === 'all' || !filled(cur[f]?.[l]))) merged[l] = val[l];
+    }
+    next[f] = merged;
+  }
+  return next;
+}
+const LANG_NAMES = { en: 'inglés', pt: 'portugués', fr: 'francés' };
+const langList = (ls) => ls.map((l) => LANG_NAMES[l] || l).join(', ').replace(/, ([^,]*)$/, ' y $1');
+
 function initial(a, authorDefault) {
   return {
     id: a?.id || null, slug: a?.slug || '',
@@ -34,7 +51,7 @@ function initial(a, authorDefault) {
   };
 }
 
-export function ArticleEditor({ article, categories, sourceOptions, entityOptions, isAdmin, authorDefault }) {
+export function ArticleEditor({ article, categories, sourceOptions, entityOptions, isAdmin, authorDefault, translateEnabled = false }) {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
@@ -60,7 +77,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
     setDirty(true);
   };
 
-  const save = useCallback(async (overrides = {}, { silent = false } = {}) => {
+  const save = useCallback(async (overrides = {}, { silent = false, translate = 'missing' } = {}) => {
     const f = { ...ref.current, ...overrides };
     if (!f.title.es?.trim()) { if (!silent) toast('El titular en español es obligatorio', 'error'); return null; }
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.slug)) { if (!silent) toast('El slug no es válido', 'error'); return null; }
@@ -68,12 +85,14 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
     const msg = overrides.published === true
       ? (f.published_at && f.published_at > new Date().toISOString() ? 'Noticia programada' : 'Noticia publicada')
       : overrides.published === false ? 'Pasada a borrador' : 'Cambios guardados';
-    const res = await run(saveArticle({ ...f, category_id: f.category_id || null, source_id: f.source_id || null }), silent ? null : msg, { refresh: !silent });
+    const res = await run(saveArticle({ ...f, category_id: f.category_id || null, source_id: f.source_id || null }, { translate }), silent ? null : msg, { refresh: !silent });
     setSaving(false);
     if (!res) return null;
-    setForm((cur) => ({ ...cur, ...overrides, id: res.id, published_at: res.published_at }));
+    setForm((cur) => ({ ...mergeTranslations(cur, res, translate), ...overrides, id: res.id, published_at: res.published_at }));
     setDirty(false);
     setSavedAt(res.updated_at);
+    if (res.warning) toast(res.warning, 'error');
+    else if (res.translated?.length && !silent) toast(`Traducido automáticamente al ${langList(res.translated)}`);
     if (!f.id) router.replace(`/admin/news/${res.id}`);
     return res;
   }, [run, router, toast]);
@@ -120,7 +139,9 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
             <div className="card__head">
               <LocaleTabs lang={lang} onChange={setLang} filled={filledLangs} />
             </div>
-            {lang !== 'es' && !filled(form.title[lang]) && <p className="notice">Sin traducción: en /{lang}/noticias se mostrará la versión española.</p>}
+            {lang !== 'es' && (translateEnabled
+              ? <p className="notice">Lo que esté vacío se traduce solo desde el español al guardar. Si corriges algo aquí, se respeta tu versión.</p>
+              : !filled(form.title[lang]) && <p className="notice">Sin traducción: en /{lang}/noticias se mostrará la versión española.</p>)}
             <textarea className="headline-input" rows={2} value={form.title[lang] || ''} onChange={(e) => setLoc('title', e.target.value)} placeholder={lang === 'es' ? 'Titular' : (form.title.es || 'Titular')} aria-label="Titular" maxLength={200} />
             <textarea className="standfirst-input" rows={2} value={form.excerpt[lang] || ''} onChange={(e) => setLoc('excerpt', e.target.value)} placeholder={lang === 'es' ? 'Entradilla: una o dos frases que resumen la noticia' : (form.excerpt.es || 'Entradilla')} aria-label="Entradilla" maxLength={500} />
             <RichEditor key={`body-${lang}`} value={form.body[lang] || null} onChange={(v) => setLoc('body', v)} placeholder="Escribe la noticia. Usa H2 para secciones, cita las fuentes con enlaces…" label={`Cuerpo (${lang})`} />
@@ -169,6 +190,21 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
             <Select label="Fuente" value={form.source_id} onChange={(v) => set({ source_id: v })} options={sourceOptions.map((s) => ({ value: s.id, label: s.label }))} placeholder="— Sin fuente —" />
             <TagInput value={form.tags} onChange={(v) => set({ tags: v })} />
             <EntityPicker label="Fichas en esta noticia" multiple options={entityOptions} value={form.entity_ids} onChange={(v) => set({ entity_ids: v })} typeLabels={TYPE_SINGULAR} />
+          </section>
+
+          <section className="card">
+            <h2 className="card__title">Idiomas</h2>
+            {translateEnabled ? (
+              <>
+                <p className="field__hint">Traducción automática activada: al guardar se rellenan solos el inglés, el portugués y el francés que estén vacíos.</p>
+                <button type="button" className="abtn abtn--small" disabled={busy || saving || !form.title.es?.trim()} onClick={async () => {
+                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán titular, entradilla, cuerpo y SEO en inglés, portugués y francés por una traducción nueva del español.', confirmLabel: 'Traducir' }))) return;
+                  save({}, { translate: 'all' });
+                }}>Volver a traducir desde el español</button>
+              </>
+            ) : (
+              <p className="field__hint">Traducción automática desactivada. Añade <code>DEEPL_API_KEY</code> en Vercel para activarla (ver README).</p>
+            )}
           </section>
 
           {isAdmin && form.id && (

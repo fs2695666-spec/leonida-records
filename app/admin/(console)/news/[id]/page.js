@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { entityOptions, getArticleAdmin, listCategoriesAdmin, sourceOptions } from '@/lib/admin/data';
 import { getSession, isAdminProfile } from '@/lib/auth';
+import { isTranslateConfigured } from '@/lib/translate';
 import { ArticleEditor } from '@/components/admin/ArticleEditor';
 
 export async function generateMetadata({ params }) {
@@ -17,7 +18,7 @@ export default async function EditArticle({ params }) {
   if (!article) notFound();
   return (
     <div className="page page--editor">
-      <ArticleEditor key={article.id} article={article} categories={categories} sourceOptions={sources} entityOptions={entities} isAdmin={isAdminProfile(profile)} />
+      <ArticleEditor key={article.id} article={article} categories={categories} sourceOptions={sources} entityOptions={entities} isAdmin={isAdminProfile(profile)} translateEnabled={isTranslateConfigured()} />
     </div>
   );
 }

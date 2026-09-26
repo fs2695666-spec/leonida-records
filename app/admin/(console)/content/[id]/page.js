@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { entityOptions, getEntityAdmin, sourceOptions } from '@/lib/admin/data';
 import { getSession, isAdminProfile } from '@/lib/auth';
+import { isTranslateConfigured } from '@/lib/translate';
 import { EntityEditor } from '@/components/admin/EntityEditor';
 
 export async function generateMetadata({ params }) {
@@ -17,7 +18,7 @@ export default async function EditEntity({ params }) {
   if (!data) notFound();
   return (
     <div className="page page--editor">
-      <EntityEditor key={data.entity.id} entity={data.entity} facts={data.facts} relations={data.relations} media={data.media} sourceOptions={sources} entityOptions={entities} isAdmin={isAdminProfile(profile)} />
+      <EntityEditor key={data.entity.id} entity={data.entity} facts={data.facts} relations={data.relations} media={data.media} sourceOptions={sources} entityOptions={entities} isAdmin={isAdminProfile(profile)} translateEnabled={isTranslateConfigured()} />
     </div>
   );
 }

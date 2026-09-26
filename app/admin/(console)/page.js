@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { ENTITY_TYPES } from '@/lib/i18n';
 import { TYPE_LABELS } from '@/components/admin/labels';
 import { RelTime } from '@/components/admin/RelTime';
+import { TranslateTools } from '@/components/admin/TranslateTools';
 
 export const metadata = { title: 'Panel' };
 
@@ -93,6 +94,7 @@ export default async function Dashboard({ searchParams }) {
             <h2>Salud del contenido</h2>
             <span className="muted">{d.healthTotal} elementos con algo pendiente</span>
           </header>
+          <TranslateTools />
           {d.health.length === 0 ? <p className="notice notice--ok">Todo está traducido, con imagen y con fuente. 🌴</p> : (
             <ul className="health">
               {d.health.map((h) => (

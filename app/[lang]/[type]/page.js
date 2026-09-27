@@ -7,7 +7,8 @@ import { EntityCard, entityHref } from '@/components/site/Cards';
 import { Evidence } from '@/components/site/Evidence';
 
 export const revalidate = 300;
-export const dynamicParams = false;
+// true (not false): with false, an on-demand revalidation from the admin makes Next.js answer 404 for these pages.
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return LOCALES.flatMap((lang) => ENTITY_TYPES.map((type) => ({ lang, type })));
@@ -24,7 +25,12 @@ export default async function TypeIndex({ params }) {
   const { lang, type } = await params;
   if (!ENTITY_TYPES.includes(type)) notFound();
   const dict = getDictionary(lang);
-  const items = await listEntities({ type });
+  const all = await listEntities({ type });
+  // Vehicles: strongest evidence first, then alphabetical
+  const RANK = { CONFIRMED: 0, OBSERVED: 1, REPORTED: 2, SPECULATION: 3, DEBUNKED: 4 };
+  const items = type === 'vehicles'
+    ? [...all].sort((a, b) => (RANK[a.status] - RANK[b.status]) || pick(a.title, lang).replace(/^[’']\d+\s*/, '').localeCompare(pick(b.title, lang).replace(/^[’']\d+\s*/, ''), lang))
+    : all;
   const counts = Object.fromEntries(EVIDENCE.map((l) => [l, items.filter((i) => i.status === l).length]));
   const variant = type === 'characters' ? 'arch' : type === 'facts' || type === 'theories' ? 'text' : 'wide';
 

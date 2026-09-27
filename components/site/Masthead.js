@@ -10,14 +10,14 @@ export function Masthead({ lang, dict, categories, activeCategory, big = true })
         <span>{dict.times.edition} · {dict.home.unofficial}</span>
         <span>{formatDate(now, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
       </p>
-      {big ? <h1 className="masthead__name display"><Link href={href(lang, '/noticias')}>{dict.times.name}</Link></h1>
-        : <p className="masthead__name display"><Link href={href(lang, '/noticias')}>{dict.times.name}</Link></p>}
+      {big ? <h1 className="masthead__name display"><Link href={href(lang, '/news')}>{dict.times.name}</Link></h1>
+        : <p className="masthead__name display"><Link href={href(lang, '/news')}>{dict.times.name}</Link></p>}
       <p className="masthead__motto">{dict.times.motto}</p>
       {categories?.length > 0 && (
         <nav className="masthead__sections" aria-label={dict.times.sections}>
-          <Link href={href(lang, '/noticias/archivo')} aria-current={!activeCategory ? 'true' : undefined}>{dict.times.all}</Link>
+          <Link href={href(lang, '/news/archive')} aria-current={!activeCategory ? 'true' : undefined}>{dict.times.all}</Link>
           {categories.map((c) => (
-            <Link key={c.id} href={`${href(lang, '/noticias/archivo')}?category=${c.slug}`} aria-current={activeCategory === c.slug ? 'true' : undefined}>{pick(c.name, lang)}</Link>
+            <Link key={c.id} href={`${href(lang, '/news/archive')}?category=${c.slug}`} aria-current={activeCategory === c.slug ? 'true' : undefined}>{pick(c.name, lang)}</Link>
           ))}
         </nav>
       )}

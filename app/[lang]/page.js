@@ -92,7 +92,7 @@ export default async function Home({ params }) {
           <p className="hero__lead">{h.heroLead}</p>
           <div className="hero__ctas">
             <Link className="btn btn--primary" href={href(lang, '/explore')}>{h.ctaExplore}</Link>
-            <Link className="btn btn--ghost btn--glass" href={href(lang, '/noticias')}>{h.ctaTimes}</Link>
+            <Link className="btn btn--ghost btn--glass" href={href(lang, '/news')}>{h.ctaTimes}</Link>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export default async function Home({ params }) {
               </span>
             </Link>
           ))}
-          <Link href={href(lang, '/noticias')} className="door door--news">
+          <Link href={href(lang, '/news')} className="door door--news">
             <span className="door__body">
               <span className="door__count tnum">{h.recordsCount(stats.news)}</span>
               <span className="door__title display">{dict.types.news}</span>
@@ -163,7 +163,7 @@ export default async function Home({ params }) {
         <div className="wrap">
           <header className="masthead">
             <p className="masthead__edge"><span>{dict.times.edition}</span><span>{formatDate(new Date().toISOString(), lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></p>
-            <h2 id="times-title" className="masthead__name display"><Link href={href(lang, '/noticias')}>{dict.times.name}</Link></h2>
+            <h2 id="times-title" className="masthead__name display"><Link href={href(lang, '/news')}>{dict.times.name}</Link></h2>
             <p className="masthead__motto">{dict.times.motto}</p>
           </header>
           {lead ? (
@@ -175,7 +175,7 @@ export default async function Home({ params }) {
               <div className="times-front__briefs">
                 <h3 className="times-front__briefs-title">{dict.times.latest}</h3>
                 {restNews.slice(2, 6).map((a) => <ArticleCard key={a.id} article={a} lang={lang} variant="brief" headingLevel={4} />)}
-                <Link className="btn btn--small" href={href(lang, '/noticias')}>{h.allNews}</Link>
+                <Link className="btn btn--small" href={href(lang, '/news')}>{h.allNews}</Link>
               </div>
             </div>
           ) : <p className="empty-note">{dict.times.empty}</p>}

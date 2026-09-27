@@ -25,7 +25,7 @@ export default async function SearchPage({ params, searchParams }) {
   const shown = type ? results.filter((r) => r.type === type) : results;
   const base = href(lang, '/search');
   const link = (t) => `${base}?q=${encodeURIComponent(q)}${t ? `&type=${t}` : ''}`;
-  const target = (r) => (r.kind === 'article' ? href(lang, `/noticias/${r.slug}`) : href(lang, `/${r.type}/${r.slug}`));
+  const target = (r) => (r.kind === 'article' ? href(lang, `/news/${r.slug}`) : href(lang, `/${r.type}/${r.slug}`));
 
   return (
     <div className="search-page">

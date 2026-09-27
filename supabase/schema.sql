@@ -47,7 +47,7 @@ $$;
 
 create or replace function public.lr_pick(v jsonb, lang text)
 returns text language sql immutable as $$
-  select coalesce(nullif(v ->> lang, ''), nullif(v ->> 'es', ''), '');
+  select coalesce(nullif(v ->> lang, ''), nullif(v ->> 'en', ''), nullif(v ->> 'es', ''), '');
 $$;
 
 create or replace function public.touch_updated_at()
@@ -192,7 +192,7 @@ create table if not exists public.entities (
   slug              text not null check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   status            text not null default 'OBSERVED'
                     check (status in ('CONFIRMED','OBSERVED','REPORTED','SPECULATION','DEBUNKED')),
-  title             jsonb not null check (public.lr_is_localized(title) and length(coalesce(title ->> 'es', '')) > 0),
+  title             jsonb not null check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0)),
   eyebrow           jsonb not null default '{}' check (public.lr_is_localized(eyebrow)),
   short_description jsonb not null default '{}' check (public.lr_is_localized(short_description)),
   description       jsonb not null default '{}' check (public.lr_is_localized(description)),
@@ -217,7 +217,7 @@ create table if not exists public.entities (
 create table if not exists public.facts (
   id             uuid primary key default gen_random_uuid(),
   entity_id      uuid not null references public.entities(id) on delete cascade,
-  title          jsonb not null check (public.lr_is_localized(title) and length(coalesce(title ->> 'es', '')) > 0),
+  title          jsonb not null check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0)),
   body           jsonb not null default '{}' check (public.lr_is_localized(body)),
   status         text not null default 'OBSERVED'
                  check (status in ('CONFIRMED','OBSERVED','REPORTED','SPECULATION','DEBUNKED')),
@@ -249,7 +249,7 @@ create table if not exists public.entity_media (
 create table if not exists public.categories (
   id         uuid primary key default gen_random_uuid(),
   slug       text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  name       jsonb not null check (public.lr_is_localized(name) and length(coalesce(name ->> 'es', '')) > 0),
+  name       jsonb not null check (public.lr_is_localized(name) and (length(coalesce(name ->> 'en', '')) > 0 or length(coalesce(name ->> 'es', '')) > 0)),
   color      text not null default 'flamingo',
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -259,7 +259,7 @@ create table if not exists public.categories (
 create table if not exists public.articles (
   id              uuid primary key default gen_random_uuid(),
   slug            text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  title           jsonb not null check (public.lr_is_localized(title) and length(coalesce(title ->> 'es', '')) > 0),
+  title           jsonb not null check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0)),
   excerpt         jsonb not null default '{}' check (public.lr_is_localized(excerpt)),
   body            jsonb not null default '{}' check (public.lr_is_localized(body)),
   seo_title       jsonb not null default '{}' check (public.lr_is_localized(seo_title)),
@@ -291,7 +291,7 @@ create table if not exists public.article_entities (
 create table if not exists public.timeline_events (
   id         uuid primary key default gen_random_uuid(),
   event_date date not null,
-  title      jsonb not null check (public.lr_is_localized(title) and length(coalesce(title ->> 'es', '')) > 0),
+  title      jsonb not null check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0)),
   detail     jsonb not null default '{}' check (public.lr_is_localized(detail)),
   kind       text not null default 'news' check (kind in ('video','news','music','launch','reveal','other')),
   entity_id  uuid references public.entities(id) on delete set null,
@@ -375,7 +375,7 @@ begin
   if auth.uid() is null then
     return coalesce(new, old);
   end if;
-  lbl := coalesce(rec -> 'title' ->> 'es', rec ->> 'name', rec -> 'name' ->> 'es', rec ->> 'alt_text', rec ->> 'storage_path', rec ->> 'key');
+  lbl := coalesce(rec -> 'title' ->> 'en', rec -> 'title' ->> 'es', rec -> 'name' ->> 'en', rec -> 'name' ->> 'es', rec ->> 'name', rec ->> 'alt_text', rec ->> 'storage_path', rec ->> 'key');
   select coalesce(display_name, email) into who from public.profiles where id = auth.uid();
   insert into public.activity_log (actor_id, actor_name, action, table_name, record_id, label)
   values (
@@ -418,7 +418,7 @@ end $$;
 -- -----------------------------------------------------------------------------
 -- Search (published content only; runs with the caller's permissions)
 -- -----------------------------------------------------------------------------
-create or replace function public.search_archive(q text, lang text default 'es', max_results integer default 40)
+create or replace function public.search_archive(q text, lang text default 'en', max_results integer default 40)
 returns table (kind text, id uuid, type text, slug text, title text, excerpt text, status text, image text, rank integer)
 language sql stable security invoker set search_path = public as $$
   with term as (select '%' || public.lr_fold(trim(q)) || '%' as t)

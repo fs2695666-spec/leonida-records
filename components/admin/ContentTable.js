@@ -8,10 +8,10 @@ import { deleteEntities, setEntitiesFeatured, setEntitiesPublished } from '@/app
 
 export function ContentTable({ rows, isAdmin, initial }) {
   const columns = [
-    { key: 'title', label: 'Ficha', sort: (r) => r.title?.es || r.slug, render: (r) => (
+    { key: 'title', label: 'Ficha', sort: (r) => (r.title?.en || r.title?.es) || r.slug, render: (r) => (
       <Link href={`/admin/content/${r.id}`} className="dt__title">
         <span className="dt__thumb">{r.hero_image ? <img src={r.hero_image} alt="" loading="lazy" /> : null}</span>
-        <span><strong>{r.title?.es || r.slug}</strong>{r.featured && <span className="star" title="Destacada">★</span>}<small>/{r.type}/{r.slug}</small></span>
+        <span><strong>{(r.title?.en || r.title?.es) || r.slug}</strong>{r.featured && <span className="star" title="Destacada">★</span>}<small>/{r.type}/{r.slug}</small></span>
       </Link>
     ) },
     { key: 'type', label: 'Tipo', sort: (r) => r.type, render: (r) => TYPE_LABELS[r.type] },
@@ -51,7 +51,7 @@ export function ContentTable({ rows, isAdmin, initial }) {
           test: (r, v) => (v === 'published' ? r.published : v === 'draft' ? !r.published : r.featured) },
         { key: 'evidence', label: 'Evidencia', options: Object.entries(EVIDENCE_LABELS).map(([value, label]) => ({ value, label })), test: (r, v) => r.status === v },
         { key: 'missing', label: 'Pendiente', options: [{ value: 'translation', label: 'Falta traducir' }, { value: 'image', label: 'Sin imagen' }, { value: 'source', label: 'Sin fuente' }],
-          test: (r, v) => (v === 'image' ? !r.hero_image : v === 'source' ? !r.primary_source_id : ['en', 'pt', 'fr'].some((l) => !r.short_description?.[l])) },
+          test: (r, v) => (v === 'image' ? !r.hero_image : v === 'source' ? !r.primary_source_id : ['en', 'es'].some((l) => !r.short_description?.[l])) },
       ]}
       bulkActions={bulk}
       rowHref={(r) => `/admin/content/${r.id}`}

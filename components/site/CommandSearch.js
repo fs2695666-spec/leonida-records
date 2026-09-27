@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 const GROUPS = ['characters', 'locations', 'vehicles', 'facts', 'news', 'trailers', 'theories'];
 
 function resultHref(lang, r) {
-  const prefix = lang === 'es' ? '' : `/${lang}`;
-  return r.kind === 'article' ? `${prefix}/noticias/${r.slug}` : `${prefix}/${r.type}/${r.slug}`;
+  const prefix = lang === 'en' ? '' : `/${lang}`;
+  return r.kind === 'article' ? `${prefix}/news/${r.slug}` : `${prefix}/${r.type}/${r.slug}`;
 }
 
 /** Instant search palette. Opens with "/" or ⌘K / Ctrl+K. Queries /api/search (published content only). */

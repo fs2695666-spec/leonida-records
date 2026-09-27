@@ -32,7 +32,7 @@ export default async function Timeline({ params }) {
             <ol className="tl">
               {list.map((ev) => {
                 const upcoming = ev.date > today;
-                const link = ev.article ? href(lang, `/noticias/${ev.article.slug}`) : ev.entity ? href(lang, `/${ev.entity.type}/${ev.entity.slug}`) : null;
+                const link = ev.article ? href(lang, `/news/${ev.article.slug}`) : ev.entity ? href(lang, `/${ev.entity.type}/${ev.entity.slug}`) : null;
                 return (
                   <li key={ev.id} className="tl__item" data-kind={ev.kind} data-upcoming={upcoming || undefined}>
                     <time className="tl__date tnum" dateTime={ev.date}>{formatDate(ev.date, lang, { day: 'numeric', month: 'long' })}</time>

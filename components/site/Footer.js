@@ -10,7 +10,7 @@ export function Footer({ lang, dict }) {
       ['/vehicles', dict.nav.vehicles], ['/facts', dict.types.facts], ['/theories', dict.types.theories],
     ] },
     { title: dict.footer.read, links: [
-      ['/noticias', dict.times.name], ['/noticias/archivo', dict.times.archive], ['/media', dict.nav.media], ['/timeline', dict.nav.timeline],
+      ['/news', dict.times.name], ['/news/archive', dict.times.archive], ['/media', dict.nav.media], ['/timeline', dict.nav.timeline],
     ] },
     { title: dict.footer.project, links: [['/sources', dict.nav.sources], ['/search', dict.nav.search]] },
   ];
@@ -35,7 +35,7 @@ export function Footer({ lang, dict }) {
           <h2>{dict.nav.language}</h2>
           <ul className="site-footer__langs">
             {LOCALES.map((l) => (
-              <li key={l}><a href={l === 'es' ? '/es' : href(l, '/')} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>{LOCALE_META[l].name}</a></li>
+              <li key={l}><a href={`/${l}`} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>{LOCALE_META[l].name}</a></li>
             ))}
           </ul>
         </div>

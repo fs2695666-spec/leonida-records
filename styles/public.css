@@ -876,3 +876,12 @@ main { display: block; min-height: 60vh; outline: none; }
   .lmap__facade-body { padding-top: 150px; }
 }
 @media (hover: none), (pointer: coarse) { .only-keyboard { display: none; } }
+
+/* Vehicle catalogue: denser on phones (130+ records) */
+@media (max-width: 700px) {
+  .index-page[data-type='vehicles'] .card-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 0.75rem; }
+  .index-page[data-type='vehicles'] .ecard__media { aspect-ratio: 4 / 3; }
+  .index-page[data-type='vehicles'] .ecard__title { font-size: 1.15rem; }
+  .index-page[data-type='vehicles'] .ecard__short { display: none; }
+  .index-page[data-type='vehicles'] .ecard__kicker { font-size: 0.7rem; }
+}

@@ -8,7 +8,7 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: 'Noticia' };
   const a = await getArticleAdmin(id).catch(() => null);
-  return { title: a?.title?.es || 'Noticia' };
+  return { title: (a?.title?.en || a?.title?.es) || 'Noticia' };
 }
 
 export default async function EditArticle({ params }) {

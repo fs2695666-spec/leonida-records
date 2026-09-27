@@ -8,7 +8,7 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: 'Ficha' };
   const d = await getEntityAdmin(id).catch(() => null);
-  return { title: d?.entity?.title?.es || 'Ficha' };
+  return { title: (d?.entity?.title?.en || d?.entity?.title?.es) || 'Ficha' };
 }
 
 export default async function EditEntity({ params }) {

@@ -37,14 +37,20 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Old news URLs: they used to be Spanish at the root and English under /en
+      { source: '/noticias', destination: '/es/news', permanent: true },
+      { source: '/noticias/archivo', destination: '/es/news/archive', permanent: true },
+      { source: '/noticias/:slug', destination: '/es/news/:slug', permanent: true },
+      { source: '/en/noticias', destination: '/news', permanent: true },
+      { source: '/en/noticias/archivo', destination: '/news/archive', permanent: true },
+      { source: '/en/noticias/:slug', destination: '/news/:slug', permanent: true },
+      // Portuguese and French are no longer offered
+      { source: '/:lang(pt|fr)', destination: '/', permanent: true },
+      { source: '/:lang(pt|fr)/noticias/:slug', destination: '/news/:slug', permanent: true },
+      { source: '/:lang(pt|fr)/:path*', destination: '/:path*', permanent: true },
+      // v8 URLs
       { source: '/personajes', destination: '/characters', permanent: true },
-      { source: '/:lang(en|pt|fr)/personajes', destination: '/:lang/characters', permanent: true },
       { source: '/trailer-room', destination: '/media', permanent: true },
-      { source: '/:lang(en|pt|fr)/trailer-room', destination: '/:lang/media', permanent: true },
-      { source: '/news', destination: '/noticias', permanent: true },
-      { source: '/news/:slug', destination: '/noticias/:slug', permanent: true },
-      { source: '/:lang(en|pt|fr)/news', destination: '/:lang/noticias', permanent: true },
-      { source: '/:lang(en|pt|fr)/news/:slug', destination: '/:lang/noticias/:slug', permanent: true },
     ];
   },
 };

@@ -157,7 +157,7 @@ function MediaDetail({ item, onClose, onDelete }) {
       <div className="field">
         <p className="field__label">Usado en galerías</p>
         {item.entity_media?.length ? (
-          <ul className="picked">{item.entity_media.map((l) => l.entity && <li key={l.entity.id}><Link href={`/admin/content/${l.entity.id}`}>{l.entity.title?.es}</Link></li>)}</ul>
+          <ul className="picked">{item.entity_media.map((l) => l.entity && <li key={l.entity.id}><Link href={`/admin/content/${l.entity.id}`}>{(l.entity.title?.en || l.entity.title?.es)}</Link></li>)}</ul>
         ) : <p className="muted">Ninguna. Añádelo desde la pestaña Media de una ficha.</p>}
       </div>
     </Drawer>

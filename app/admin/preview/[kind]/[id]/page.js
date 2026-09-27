@@ -16,7 +16,7 @@ const CARD = 'id,type,slug,status,title,eyebrow,short_description,hero_image,her
 export default async function Preview({ params, searchParams }) {
   const { kind, id } = await params;
   const sp = await searchParams;
-  const lang = isLocale(sp?.lang) ? sp.lang : 'es';
+  const lang = isLocale(sp?.lang) ? sp.lang : 'en';
   const { supabase, profile } = await requireStaffPage();
   if (!isStaffProfile(profile) || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
 

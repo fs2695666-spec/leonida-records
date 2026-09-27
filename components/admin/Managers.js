@@ -8,20 +8,20 @@ import { deleteCategory, saveCategory } from '@/app/admin/_actions/articles';
 import { deleteSource, deleteTimeline, saveSource, saveTimeline } from '@/app/admin/_actions/library';
 import { addRelation, deleteRelation } from '@/app/admin/_actions/content';
 
-const langsFilled = (o) => ['es', 'en', 'pt', 'fr'].filter((l) => o?.[l]?.trim?.());
+const langsFilled = (o) => ['en', 'es'].filter((l) => o?.[l]?.trim?.());
 const COLORS = { flamingo: '#ef4f85', pool: '#3fb9c2', lavender: '#9c86e8', sun: '#f2b73a', peach: '#f77e6a', sky: '#6bb8dc', ink: '#1d1a3a' };
 
 /* ============================================================ Categories */
 export function CategoriesManager({ rows, isAdmin }) {
   const [edit, setEdit] = useState(null);
-  const [lang, setLang] = useState('es');
+  const [lang, setLang] = useState('en');
   const [run, busy] = useAction();
   const confirm = useConfirm();
-  const open = (c) => { setLang('es'); setEdit(c ? { ...c } : { id: null, slug: '', name: {}, color: 'flamingo', sort_order: rows.length }); };
+  const open = (c) => { setLang('en'); setEdit(c ? { ...c } : { id: null, slug: '', name: {}, color: 'flamingo', sort_order: rows.length }); };
   const toast = useToast();
   const save = async () => { const r = await run(saveCategory(edit), 'Sección guardada'); if (r) { setEdit(null); if (r.warning) toast(r.warning, 'error'); } };
   const remove = async (c) => {
-    if (!(await confirm({ title: `¿Eliminar «${c.name?.es}»?`, message: 'Las noticias de esta sección quedarán sin sección.', confirmLabel: 'Eliminar', danger: true }))) return;
+    if (!(await confirm({ title: `¿Eliminar «${(c.name?.en || c.name?.es)}»?`, message: 'Las noticias de esta sección quedarán sin sección.', confirmLabel: 'Eliminar', danger: true }))) return;
     await run(deleteCategory(c.id), 'Sección eliminada');
   };
   return (
@@ -32,7 +32,7 @@ export function CategoriesManager({ rows, isAdmin }) {
           {rows.map((c) => (
             <li key={c.id}>
               <span className="swatch" style={{ background: COLORS[c.color] }} aria-hidden="true" />
-              <div><strong>{c.name?.es}</strong><small>/noticias/archivo?category={c.slug} · {c.articles?.[0]?.count || 0} noticias · {langsFilled(c.name).join(' ').toUpperCase()}</small></div>
+              <div><strong>{(c.name?.en || c.name?.es)}</strong><small>/news/archive?category={c.slug} · {c.articles?.[0]?.count || 0} noticias · {langsFilled(c.name).join(' ').toUpperCase()}</small></div>
               <span className="row-actions">
                 <button type="button" className="abtn abtn--small" onClick={() => open(c)}>Editar</button>
                 {isAdmin && <button type="button" className="icon-btn" onClick={() => remove(c)} aria-label="Eliminar">×</button>}
@@ -44,11 +44,11 @@ export function CategoriesManager({ rows, isAdmin }) {
       {edit && (
         <Drawer title={edit.id ? 'Editar sección' : 'Nueva sección'} onClose={() => setEdit(null)} footer={<>
           <button type="button" className="abtn" onClick={() => setEdit(null)}>Cancelar</button>
-          <button type="button" className="abtn abtn--primary" disabled={busy || !edit.name.es?.trim() || !edit.slug} onClick={save}>Guardar</button>
+          <button type="button" className="abtn abtn--primary" disabled={busy || !(edit.name.en?.trim() || edit.name.es?.trim()) || !edit.slug} onClick={save}>Guardar</button>
         </>}>
           <LocaleTabs lang={lang} onChange={setLang} filled={langsFilled(edit.name)} compact />
-          <TextInput label={`Nombre (${lang.toUpperCase()})`} required={lang === 'es'} value={edit.name[lang] || ''} maxLength={60}
-            onChange={(v) => setEdit((e) => ({ ...e, name: { ...e.name, [lang]: v }, slug: !e.id && lang === 'es' ? slugify(v) : e.slug }))} />
+          <TextInput label={`Nombre (${lang.toUpperCase()})`} required={lang === 'en'} value={edit.name[lang] || ''} maxLength={60}
+            onChange={(v) => setEdit((e) => ({ ...e, name: { ...e.name, [lang]: v }, slug: !e.id && lang === 'en' ? slugify(v) : e.slug }))} />
           <TextInput label="Slug" value={edit.slug} onChange={(v) => setEdit((e) => ({ ...e, slug: slugify(v) }))} />
           <Field label="Color">
             <div className="swatches">
@@ -75,7 +75,7 @@ export function SourcesManager({ rows, isAdmin }) {
   const save = async () => { if (await run(saveSource(edit), 'Fuente guardada')) setEdit(null); };
   const remove = async (s) => {
     const uses = (s.entities?.[0]?.count || 0) + (s.articles?.[0]?.count || 0);
-    if (!(await confirm({ title: `¿Eliminar «${s.name}»?`, message: uses ? `La usan ${uses} fichas/noticias: se quedarán sin fuente.` : 'No la usa ningún contenido.', confirmLabel: 'Eliminar', danger: true }))) return;
+    if (!(await confirm({ title: `¿Eliminar «${s.name}»?`, message: uses ? `La usan ${uses} fichas/news: se quedarán sin fuente.` : 'No la usa ningún contenido.', confirmLabel: 'Eliminar', danger: true }))) return;
     await run(deleteSource(s.id), 'Fuente eliminada');
   };
   const set = (k) => (v) => setEdit((e) => ({ ...e, [k]: v }));
@@ -123,14 +123,14 @@ export function SourcesManager({ rows, isAdmin }) {
 const KINDS = { video: 'Vídeo', news: 'Noticia', music: 'Música', launch: 'Lanzamiento', reveal: 'Revelación', other: 'Otro' };
 export function TimelineManager({ rows, entities, articles, isAdmin }) {
   const [edit, setEdit] = useState(null);
-  const [lang, setLang] = useState('es');
+  const [lang, setLang] = useState('en');
   const [run, busy] = useAction();
   const confirm = useConfirm();
-  const open = (t) => { setLang('es'); setEdit(t ? { ...t, entity_id: t.entity_id || '', article_id: t.article_id || '' } : { id: null, event_date: new Date().toISOString().slice(0, 10), title: {}, detail: {}, kind: 'news', entity_id: '', article_id: '', published: true }); };
+  const open = (t) => { setLang('en'); setEdit(t ? { ...t, entity_id: t.entity_id || '', article_id: t.article_id || '' } : { id: null, event_date: new Date().toISOString().slice(0, 10), title: {}, detail: {}, kind: 'news', entity_id: '', article_id: '', published: true }); };
   const toast = useToast();
   const save = async () => { const r = await run(saveTimeline(edit), 'Evento guardado'); if (r) { setEdit(null); if (r.warning) toast(r.warning, 'error'); } };
   const remove = async (t) => {
-    if (!(await confirm({ title: `¿Eliminar «${t.title?.es}»?`, confirmLabel: 'Eliminar', danger: true }))) return;
+    if (!(await confirm({ title: `¿Eliminar «${(t.title?.en || t.title?.es)}»?`, confirmLabel: 'Eliminar', danger: true }))) return;
     await run(deleteTimeline(t.id), 'Evento eliminado');
   };
   const today = new Date().toISOString().slice(0, 10);
@@ -142,7 +142,7 @@ export function TimelineManager({ rows, entities, articles, isAdmin }) {
           {rows.map((t) => (
             <li key={t.id}>
               <span className="date-chip tnum" data-future={t.event_date > today || undefined}>{new Date(`${t.event_date}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-              <div><strong>{t.title?.es}</strong><small>{KINDS[t.kind]}{!t.published && ' · oculto'} · {langsFilled(t.title).join(' ').toUpperCase()}</small></div>
+              <div><strong>{(t.title?.en || t.title?.es)}</strong><small>{KINDS[t.kind]}{!t.published && ' · oculto'} · {langsFilled(t.title).join(' ').toUpperCase()}</small></div>
               <span className="row-actions">
                 <button type="button" className="abtn abtn--small" onClick={() => open(t)}>Editar</button>
                 {isAdmin && <button type="button" className="icon-btn" onClick={() => remove(t)} aria-label="Eliminar">×</button>}
@@ -154,14 +154,14 @@ export function TimelineManager({ rows, entities, articles, isAdmin }) {
       {edit && (
         <Drawer title={edit.id ? 'Editar evento' : 'Nuevo evento'} onClose={() => setEdit(null)} footer={<>
           <button type="button" className="abtn" onClick={() => setEdit(null)}>Cancelar</button>
-          <button type="button" className="abtn abtn--primary" disabled={busy || !edit.title.es?.trim() || !edit.event_date} onClick={save}>Guardar</button>
+          <button type="button" className="abtn abtn--primary" disabled={busy || !(edit.title.en?.trim() || edit.title.es?.trim()) || !edit.event_date} onClick={save}>Guardar</button>
         </>}>
           <div className="grid-2">
             <Field label="Fecha"><input type="date" className="input" value={edit.event_date} onChange={(e) => setEdit((x) => ({ ...x, event_date: e.target.value }))} /></Field>
             <Select label="Tipo" value={edit.kind} onChange={(v) => setEdit((x) => ({ ...x, kind: v }))} options={Object.entries(KINDS).map(([value, label]) => ({ value, label }))} />
           </div>
           <LocaleTabs lang={lang} onChange={setLang} filled={langsFilled(edit.title)} compact />
-          <TextInput label={`Título (${lang.toUpperCase()})`} required={lang === 'es'} value={edit.title[lang] || ''} onChange={(v) => setEdit((x) => ({ ...x, title: { ...x.title, [lang]: v } }))} maxLength={160} />
+          <TextInput label={`Título (${lang.toUpperCase()})`} required={lang === 'en'} value={edit.title[lang] || ''} onChange={(v) => setEdit((x) => ({ ...x, title: { ...x.title, [lang]: v } }))} maxLength={160} />
           <TextInput label={`Detalle (${lang.toUpperCase()})`} multiline rows={2} value={edit.detail[lang] || ''} onChange={(v) => setEdit((x) => ({ ...x, detail: { ...x.detail, [lang]: v } }))} maxLength={400} />
           <EntityPicker label="Enlazar a ficha (opcional)" options={entities} value={edit.entity_id} onChange={(v) => setEdit((x) => ({ ...x, entity_id: v }))} typeLabels={TYPE_SINGULAR} />
           <EntityPicker label="…o a noticia (opcional)" options={articles} value={edit.article_id} onChange={(v) => setEdit((x) => ({ ...x, article_id: v }))} placeholder="Buscar noticia…" />
@@ -180,7 +180,7 @@ export function RelationsOverview({ rows, entities }) {
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const shown = useMemo(() => rows.filter((r) => (!type || r.relation_type === type)
-    && (!q || `${r.from?.title?.es} ${r.to?.title?.es}`.toLowerCase().includes(q.toLowerCase()))), [rows, q, type]);
+    && (!q || `${(r.from?.title?.en || r.from?.title?.es)} ${(r.to?.title?.en || r.to?.title?.es)}`.toLowerCase().includes(q.toLowerCase()))), [rows, q, type]);
   const byId = Object.fromEntries(entities.map((e) => [e.id, e]));
   const add = async () => {
     const ok = await run(addRelation({ from_entity_id: draft.from, to_entity_id: draft.to, relation_type: draft.relation_type, note: draft.note }), 'Relación creada');
@@ -205,7 +205,7 @@ export function RelationsOverview({ rows, entities }) {
             {shown.map((r) => (
               <li key={r.id}>
                 <span className="rel-list__s">
-                  <Link href={`/admin/content/${r.from?.id}`}>{r.from?.title?.es}</Link> <em>{(RELATION_LABELS[r.relation_type] || RELATION_LABELS.related)[0]}</em> <Link href={`/admin/content/${r.to?.id}`}>{r.to?.title?.es}</Link>
+                  <Link href={`/admin/content/${r.from?.id}`}>{(r.from?.title?.en || r.from?.title?.es)}</Link> <em>{(RELATION_LABELS[r.relation_type] || RELATION_LABELS.related)[0]}</em> <Link href={`/admin/content/${r.to?.id}`}>{(r.to?.title?.en || r.to?.title?.es)}</Link>
                   {r.note && <small> · {r.note}</small>}
                 </span>
                 <button type="button" className="icon-btn" onClick={() => remove(r)} aria-label="Quitar">×</button>

@@ -31,7 +31,7 @@ function mergeTranslations(cur, res, mode) {
   }
   return next;
 }
-const LANG_NAMES = { en: 'inglés', pt: 'portugués', fr: 'francés' };
+const LANG_NAMES = { en: 'inglés', es: 'español' };
 const langList = (ls) => ls.map((l) => LANG_NAMES[l] || l).join(', ').replace(/, ([^,]*)$/, ' y $1');
 const filledLangs = (obj) => LANGS.map((l) => l.code).filter((l) => filled(obj?.[l]));
 
@@ -56,7 +56,7 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
   const [run, busy] = useAction();
   const [form, setForm] = useState(() => initialForm(entity, defaultType));
   const [tab, setTab] = useState('general');
-  const [lang, setLang] = useState('es');
+  const [lang, setLang] = useState('en');
   const [dirty, setDirty] = useState(false);
   const [slugLocked, setSlugLocked] = useState(Boolean(entity?.slug));
   const [savedAt, setSavedAt] = useState(entity?.updated_at || null);
@@ -71,7 +71,7 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
   const setLoc = (field, l, v) => {
     setForm((f) => {
       const next = { ...f, [field]: { ...f[field], [l]: v } };
-      if (field === 'title' && l === 'es' && !slugLocked) next.slug = slugifyLocal(v);
+      if (field === 'title' && l === 'en' && !slugLocked) next.slug = slugifyLocal(v);
       return next;
     });
     setDirty(true);
@@ -79,7 +79,7 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
 
   const validate = (f) => {
     const e = {};
-    if (!f.title.es?.trim()) e.title = 'El título en español es obligatorio.';
+    if (!(f.title.en?.trim() || f.title.es?.trim())) e.title = 'El título en inglés es obligatorio.';
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.slug)) e.slug = 'Slug no válido: minúsculas, números y guiones.';
     if (f.hero_image && !/^https?:\/\//.test(f.hero_image)) e.hero_image = 'La imagen debe ser una URL https://';
     if (f.video_url && !/^https?:\/\//.test(f.video_url)) e.video_url = 'URL no válida';
@@ -124,7 +124,7 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
     if (res) { setDirty(false); router.push('/admin/content'); router.refresh(); }
   };
 
-  const title = form.title.es || 'Nueva ficha';
+  const title = form.title.en || form.title.es || 'Nueva ficha';
   const publicUrl = `/${form.type}/${form.slug}`;
   const tabs = [
     ['general', 'General'], ['content', 'Contenido'], ['media', 'Media'], ['sources', 'Fuentes y datos'], ['relations', 'Relaciones'], ['translations', 'Traducciones'],
@@ -164,9 +164,9 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
             <section className="card">
               <h2 className="card__title">Identidad</h2>
               <Select label="Tipo" value={form.type} onChange={(v) => set({ type: v })} options={TYPES.map((t) => ({ value: t, label: TYPE_SINGULAR[t] }))} />
-              <TextInput label="Título (español)" required value={form.title.es || ''} onChange={(v) => { setLoc('title', 'es', v); }} error={errors.title} maxLength={160} />
-              <SlugInput value={form.slug} onChange={(v) => set({ slug: v })} source={form.title.es} locked={slugLocked} onLock={setSlugLocked} prefix={`/${form.type}/`} error={errors.slug} />
-              <TextInput label="Antetítulo (español)" hint="Línea pequeña sobre el título. Ej.: «Personaje 001»." value={form.eyebrow.es || ''} onChange={(v) => { setLoc('eyebrow', 'es', v); }} maxLength={80} />
+              <TextInput label="Título (inglés)" required value={form.title.en || ''} onChange={(v) => { setLoc('title', 'en', v); }} error={errors.title} maxLength={160} />
+              <SlugInput value={form.slug} onChange={(v) => set({ slug: v })} source={form.title.en || form.title.es} locked={slugLocked} onLock={setSlugLocked} prefix={`/${form.type}/`} error={errors.slug} />
+              <TextInput label="Antetítulo (inglés)" hint="Línea pequeña sobre el título. Ej.: «Character 001»." value={form.eyebrow.en || ''} onChange={(v) => { setLoc('eyebrow', 'en', v); }} maxLength={80} />
               <TagInput value={form.tags} onChange={(v) => set({ tags: v })} />
             </section>
             <section className="card">
@@ -199,17 +199,17 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
           <section className="card">
             <div className="card__head">
               <h2 className="card__title">Textos en {LANGS.find((l) => l.code === lang).label}</h2>
-              <LocaleTabs lang={lang} onChange={setLang} filled={['es', 'en', 'pt', 'fr'].filter((l) => filled(form.short_description[l]))} />
+              <LocaleTabs lang={lang} onChange={setLang} filled={['en', 'es'].filter((l) => filled(form.short_description[l]))} />
             </div>
-            {lang !== 'es' && (
+            {lang !== 'en' && (
               <p className="notice">{translateEnabled
-                ? 'Los campos vacíos se traducen solos desde el español al guardar. Si corriges algo aquí, se respeta tu versión.'
-                : 'Si dejas un campo vacío, la web mostrará el texto en español.'}</p>
+                ? 'Los campos vacíos se traducen solos desde el inglés al guardar. Si corriges algo aquí, se respeta tu versión.'
+                : 'Si dejas un campo vacío, la web en español mostrará el texto en inglés.'}</p>
             )}
-            <TextInput label="Título" required={lang === 'es'} value={form.title[lang] || ''} onChange={(v) => { setLoc('title', lang, v); }} maxLength={160} placeholder={lang !== 'es' ? form.title.es : ''} />
-            <TextInput label="Antetítulo" value={form.eyebrow[lang] || ''} onChange={(v) => { setLoc('eyebrow', lang, v); }} maxLength={80} placeholder={lang !== 'es' ? form.eyebrow.es : ''} />
-            <TextInput label="Resumen" hint="Una o dos frases. Se usa en tarjetas, buscador y SEO." multiline rows={3} value={form.short_description[lang] || ''} onChange={(v) => { setLoc('short_description', lang, v); }} maxLength={400} placeholder={lang !== 'es' ? form.short_description.es : ''} />
-            <TextInput label="Cita destacada" multiline rows={2} value={form.quote[lang] || ''} onChange={(v) => { setLoc('quote', lang, v); }} maxLength={400} placeholder={lang !== 'es' ? form.quote.es : ''} />
+            <TextInput label="Título" required={lang === 'en'} value={form.title[lang] || ''} onChange={(v) => { setLoc('title', lang, v); }} maxLength={160} placeholder={lang !== 'en' ? form.title.en : ''} />
+            <TextInput label="Antetítulo" value={form.eyebrow[lang] || ''} onChange={(v) => { setLoc('eyebrow', lang, v); }} maxLength={80} placeholder={lang !== 'en' ? form.eyebrow.en : ''} />
+            <TextInput label="Resumen" hint="Una o dos frases. Se usa en tarjetas, buscador y SEO." multiline rows={3} value={form.short_description[lang] || ''} onChange={(v) => { setLoc('short_description', lang, v); }} maxLength={400} placeholder={lang !== 'en' ? form.short_description.en : ''} />
+            <TextInput label="Cita destacada" multiline rows={2} value={form.quote[lang] || ''} onChange={(v) => { setLoc('quote', lang, v); }} maxLength={400} placeholder={lang !== 'en' ? form.quote.en : ''} />
             <Field label="Descripción">
               <RichEditor key={`desc-${lang}`} value={form.description[lang] || null} onChange={(v) => { setLoc('description', lang, v); }} placeholder="Descripción larga: qué se sabe y de dónde sale…" label={`Descripción (${lang})`} />
             </Field>
@@ -258,8 +258,8 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
                       <td>{label}</td>
                       {LANGS.map((l) => (
                         <td key={l.code}>
-                          <button type="button" className="tr-cell" data-on={filled(form[k][l.code]) || (k === 'title' && filled(form.title.es)) || undefined} onClick={() => { setLang(l.code); setTab('content'); }}>
-                            {filled(form[k][l.code]) ? '✓' : k === 'title' && filled(form.title.es) ? '= ES' : filled(form[k].es) ? 'Falta' : '—'}
+                          <button type="button" className="tr-cell" data-on={filled(form[k][l.code]) || (k === 'title' && filled(form.title.en)) || undefined} onClick={() => { setLang(l.code); setTab('content'); }}>
+                            {filled(form[k][l.code]) ? '✓' : k === 'title' && filled(form.title.en) ? '= EN' : filled(form[k].en) ? 'Falta' : '—'}
                           </button>
                         </td>
                       ))}
@@ -268,30 +268,30 @@ export function EntityEditor({ entity, facts = [], relations = [], media = [], s
                 </tbody>
               </table>
             </div>
-            <p className="field__hint">Haz clic en una celda para editar ese idioma. Los campos vacíos muestran el español en la web; en los nombres propios («= ES») suele ser lo correcto.</p>
+            <p className="field__hint">Haz clic en una celda para editar ese idioma. Los campos vacíos en español muestran el inglés en la web; en los nombres propios («= EN») suele ser lo correcto.</p>
             {translateEnabled ? (
               <div className="notice notice--ok">
-                <p><strong>Traducción automática activada.</strong> Al guardar, todo lo que esté vacío en inglés, portugués o francés se traduce solo desde el español.</p>
-                <p>Si cambias el texto en español, pulsa este botón para actualizar las traducciones (reemplaza también las que hayas corregido a mano).</p>
+                <p><strong>Traducción automática activada.</strong> Al guardar, todo lo que esté vacío en español se traduce solo desde el inglés.</p>
+                <p>Si cambias el texto en inglés, pulsa este botón para actualizar el español (reemplaza también lo que hayas corregido a mano).</p>
                 <div><button type="button" className="abtn abtn--small" disabled={busy || saving} onClick={async () => {
-                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán los textos en inglés, portugués y francés por una traducción nueva del español.', confirmLabel: 'Traducir' }))) return;
+                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán los textos en español por una traducción nueva del inglés.', confirmLabel: 'Traducir' }))) return;
                   save({}, { translate: 'all' });
-                }}>Volver a traducir todo desde el español</button></div>
+                }}>Volver a traducir al español desde el inglés</button></div>
               </div>
             ) : (
-              <p className="notice">La traducción automática no está activada. Para activarla añade la variable <code>DEEPL_API_KEY</code> en Vercel (lo explica el README). Mientras tanto puedes copiar el español como punto de partida:</p>
+              <p className="notice">La traducción automática no está activada. Para activarla añade la variable <code>DEEPL_API_KEY</code> en Vercel (lo explica el README). Mientras tanto puedes copiar el inglés como punto de partida:</p>
             )}
             <div className="btn-row" hidden={translateEnabled}>
-              {LANGS.filter((l) => l.code !== 'es').map((l) => (
+              {LANGS.filter((l) => l.code !== 'en').map((l) => (
                 <button key={l.code} type="button" className="abtn abtn--small" onClick={() => {
                   setForm((f) => {
                     const next = { ...f };
-                    for (const [k] of LOCALIZED) if (!filled(f[k][l.code]) && filled(f[k].es)) next[k] = { ...f[k], [l.code]: f[k].es };
+                    for (const [k] of LOCALIZED) if (!filled(f[k][l.code]) && filled(f[k].en)) next[k] = { ...f[k], [l.code]: f[k].en };
                     return next;
                   });
                   setDirty(true); setLang(l.code); setTab('content');
-                  toast(`Copiado el español en ${l.label} como punto de partida`);
-                }}>Copiar ES → {l.code.toUpperCase()}</button>
+                  toast(`Copiado el inglés en ${l.label} como punto de partida`);
+                }}>Copiar EN → {l.code.toUpperCase()}</button>
               ))}
             </div>
           </section>
@@ -363,7 +363,7 @@ function FactsManager({ entityId, initial, sourceOptions }) {
   const toast = useToast();
   const [list, setList] = useState(initial);
   const [editing, setEditing] = useState(null);
-  const [flang, setFlang] = useState('es');
+  const [flang, setFlang] = useState('en');
   const [run, busy] = useAction();
   const confirm = useConfirm();
   const srcLabel = useMemo(() => Object.fromEntries(sourceOptions.map((s) => [s.id, s.label])), [sourceOptions]);
@@ -385,7 +385,7 @@ function FactsManager({ entityId, initial, sourceOptions }) {
     <section className="card">
       <div className="card__head">
         <h2 className="card__title">Datos verificables</h2>
-        <button type="button" className="abtn abtn--small" disabled={!entityId} onClick={() => { setFlang('es'); setEditing(emptyFact(entityId)); }}>+ Añadir dato</button>
+        <button type="button" className="abtn abtn--small" disabled={!entityId} onClick={() => { setFlang('en'); setEditing(emptyFact(entityId)); }}>+ Añadir dato</button>
       </div>
       {!entityId && <p className="muted">Guarda la ficha primero para añadir datos.</p>}
       {entityId && list.length === 0 && !editing && <p className="muted">Cada dato lleva su propio nivel de evidencia y su fuente.</p>}
@@ -393,11 +393,11 @@ function FactsManager({ entityId, initial, sourceOptions }) {
         {list.map((f) => (
           <li key={f.id}>
             <div>
-              <strong>{f.title?.es}</strong>
+              <strong>{(f.title?.en || f.title?.es)}</strong>
               <small>{EVIDENCE_LABELS[f.status]}{f.source_id ? ` · ${srcLabel[f.source_id] || 'fuente'}` : ''}{f.timestamp_text ? ` · ${f.timestamp_text}` : ''}</small>
             </div>
             <span className="row-actions">
-              <button type="button" className="abtn abtn--small" onClick={() => { setFlang('es'); setEditing({ ...f, source_id: f.source_id || '', timestamp_text: f.timestamp_text || '' }); }}>Editar</button>
+              <button type="button" className="abtn abtn--small" onClick={() => { setFlang('en'); setEditing({ ...f, source_id: f.source_id || '', timestamp_text: f.timestamp_text || '' }); }}>Editar</button>
               <button type="button" className="icon-btn" onClick={() => remove(f)} aria-label="Borrar dato">×</button>
             </span>
           </li>
@@ -406,7 +406,7 @@ function FactsManager({ entityId, initial, sourceOptions }) {
       {editing && (
         <div className="subform">
           <div className="card__head"><strong>{editing.id ? 'Editar dato' : 'Nuevo dato'}</strong><LocaleTabs compact lang={flang} onChange={setFlang} filled={filledLangs(editing.title)} /></div>
-          <TextInput label={`Dato (${flang.toUpperCase()})`} required={flang === 'es'} value={editing.title[flang] || ''} onChange={(v) => setEditing((e) => ({ ...e, title: { ...e.title, [flang]: v } }))} maxLength={200} />
+          <TextInput label={`Dato (${flang.toUpperCase()})`} required={flang === 'en'} value={editing.title[flang] || ''} onChange={(v) => setEditing((e) => ({ ...e, title: { ...e.title, [flang]: v } }))} maxLength={200} />
           <TextInput label={`Detalle (${flang.toUpperCase()})`} multiline rows={2} value={editing.body[flang] || ''} onChange={(v) => setEditing((e) => ({ ...e, body: { ...e.body, [flang]: v } }))} maxLength={1000} />
           <div className="grid-3">
             <Select label="Evidencia" value={editing.status} onChange={(v) => setEditing((e) => ({ ...e, status: v }))} options={EVIDENCE.map((l) => ({ value: l, label: EVIDENCE_LABELS[l] }))} />
@@ -415,7 +415,7 @@ function FactsManager({ entityId, initial, sourceOptions }) {
           </div>
           <div className="btn-row">
             <button type="button" className="abtn" onClick={() => setEditing(null)}>Cancelar</button>
-            <button type="button" className="abtn abtn--primary" onClick={save} disabled={busy || !editing.title.es?.trim()}>Guardar dato</button>
+            <button type="button" className="abtn abtn--primary" onClick={save} disabled={busy || !(editing.title.en?.trim() || editing.title.es?.trim())}>Guardar dato</button>
           </div>
         </div>
       )}
@@ -461,7 +461,7 @@ function RelationsManager({ entityId, entityTitle, initial, options }) {
           <ul className="rel-list">
             {list.map((r) => (
               <li key={r.id}>
-                <span className="rel-list__s"><em>{entityTitle}</em> {sentence(r)} <Link href={`/admin/content/${r.other?.id}`}>{r.other?.title?.es || r.other?.slug}</Link>
+                <span className="rel-list__s"><em>{entityTitle}</em> {sentence(r)} <Link href={`/admin/content/${r.other?.id}`}>{(r.other?.title?.en || r.other?.title?.es) || r.other?.slug}</Link>
                   {r.note && <small> · {r.note}</small>}
                   {!r.other?.published && <small className="muted"> (borrador: no se muestra)</small>}
                 </span>

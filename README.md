@@ -1,6 +1,6 @@
 # Leonida Records
 
-Archivo editorial multilingüe (ES · EN · PT · FR) sobre GTA VI, con redacción propia (**The Leonida Times**) y panel de gestión en `/admin`.
+Archivo editorial bilingüe (inglés como idioma principal + español) sobre GTA VI, con redacción propia (**The Leonida Times**) y panel de gestión en `/admin`.
 
 > Proyecto de fans **no oficial**. No está afiliado ni respaldado por Rockstar Games ni Take-Two Interactive. Las imágenes oficiales pertenecen a sus titulares y se usan con crédito y fines informativos.
 
@@ -33,7 +33,7 @@ Crea tablas, funciones, triggers, políticas RLS, el bucket de Storage `media` y
 ### 4. Cargar el contenido inicial
 
 Nueva query con `supabase/seed.sql` → **Run**.
-Carga 29 fichas, 5 noticias, 9 fuentes, relaciones, cronología y medios (opcional, pero recomendable para empezar).
+Carga 157 fichas (entre ellas 132 vehículos), 5 noticias, 11 fuentes, relaciones, cronología y medios (opcional, pero recomendable para empezar).
 
 ### 5. Crear tu usuario
 
@@ -77,7 +77,7 @@ npm run check
 npm run dev
 ```
 
-- Web: <http://localhost:3000> (español en la raíz; `/en`, `/pt`, `/fr`).
+- Web: <http://localhost:3000> (inglés en la raíz; español en `/es`).
 - Panel: <http://localhost:3000/admin> → entra con el usuario del paso 5.
 
 Sin variables de Supabase la web arranca en **modo demo de solo lectura** con el contenido de `lib/seed-data.js`.
@@ -131,6 +131,32 @@ Antes de desplegar, en **Environment Variables** añade las mismas del paso 7 (P
 
 ---
 
+## Actualizar una web instalada antes de la v2.5
+
+La v2.5 cambia el idioma principal a **inglés** (español en `/es`; portugués y francés desaparecen) y añade el catálogo de **vehículos**. Si tu base de datos ya estaba creada:
+
+1. Supabase → **SQL Editor** → **New query** → pega `supabase/update-2.5.sql` → **Run**. No borra ni cambia nada de lo que hayas escrito: solo ajusta reglas, corrige el nombre del ’67 Vapid Dominator Buggy y añade los vehículos que falten.
+2. Sube el código nuevo a GitHub (Vercel publica solo).
+3. En el Panel del admin pulsa **Traducir todo lo que falta**: lo que solo tenías en español se traduce al inglés y viceversa.
+
+Los enlaces antiguos siguen funcionando: `/noticias/...` redirige a `/es/news/...`, y `/pt/...` o `/fr/...` redirigen a la versión en inglés.
+
+---
+
+## Traducción automática (DeepL)
+
+Con esto activado solo tienes que escribir en **inglés**: al guardar, todo lo que esté vacío en español se traduce solo (fichas, datos, noticias, cronología y secciones). Si algo antiguo solo existe en español, se traduce al inglés. Si corriges una traducción a mano, se respeta.
+
+1. Crea una cuenta gratuita en **deepl.com/pro-api** → plan **DeepL API Free** (500.000 caracteres al mes gratis; piden tarjeta solo para verificar, no cobran).
+2. En tu cuenta de DeepL → **API Keys** → copia la clave (termina en `:fx`).
+3. Vercel → **Settings → Environment Variables** → añade `DEEPL_API_KEY` con esa clave (tipo *Secret*) → **Save**.
+4. **Deployments → ⋯ → Redeploy**.
+5. En el **Panel** del admin verás "Traducción automática activada" y el botón **Traducir todo lo que falta** para traducir de una vez el contenido que ya existía.
+
+Si cambias el texto en inglés de algo ya traducido, abre la ficha → pestaña **Traducciones** → **Volver a traducir al español desde el inglés** (en noticias, en la tarjeta **Idiomas**).
+
+---
+
 ## Roles
 
 | Rol | Puede |
@@ -149,7 +175,7 @@ Los permisos se aplican dos veces: en el servidor (cada Server Action comprueba 
 - **Nueva noticia**: *The Leonida Times → Escribir noticia*. Titular, entradilla y cuerpo por idioma; sección, portada, fichas relacionadas y SEO. Una fecha futura la **programa**.
 - **Imágenes**: *Media* → arrastra archivos (se suben a Supabase Storage, máx. 15 MB) o pega una URL. Desde cualquier editor, *Biblioteca* abre el selector.
 - **Relaciones**: en la pestaña Relaciones de una ficha o en *Relaciones* (p. ej. Jason → es pareja de → Lucia). Aparecen en ambas fichas.
-- **Traducciones**: cambia de idioma con las pestañas ES/EN/PT/FR. Un campo vacío muestra el español en la web. *Traducciones → Copiar ES → XX* da un punto de partida.
+- **Traducciones**: cambia de idioma con las pestañas English / Español. Un campo vacío en español muestra el inglés en la web. *Traducciones → Copiar EN → ES* da un punto de partida.
 - **Vista previa**: botón *Vista previa* en cualquier editor (funciona también con borradores).
 
 Los cambios aparecen en la web al momento: cada acción del panel revalida las páginas públicas y el sitemap.
@@ -160,7 +186,7 @@ Los cambios aparecen en la web al momento: cada acción del panel revalida las p
 
 ```
 app/
-  [lang]/            Web pública (ES en la raíz, /en /pt /fr), ISR 5 min
+  [lang]/            Web pública (inglés en la raíz, español en /es), ISR 5 min
   admin/             Panel: login, auth, (console)/…, preview, _actions/ (Server Actions)
   api/search/        Buscador instantáneo
   sitemap.js robots.js manifest.js

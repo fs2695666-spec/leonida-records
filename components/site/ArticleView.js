@@ -19,14 +19,14 @@ export function ArticleView({ article: a, adjacent = { related: [] }, lang }) {
   return (
     <article className="story">
       <div className="story__masthead wrap">
-        <Link href={href(lang, '/noticias')} className="story__paper display">{t.name}</Link>
+        <Link href={href(lang, '/news')} className="story__paper display">{t.name}</Link>
         <p>{t.motto}</p>
       </div>
 
       <header className="story__head wrap">
         <p className="story__kicker">
           {a.category && (
-            <Link href={`${href(lang, '/noticias/archivo')}?category=${a.category.slug}`} className="cat-dot" data-color={a.category.color}>
+            <Link href={`${href(lang, '/news/archive')}?category=${a.category.slug}`} className="cat-dot" data-color={a.category.color}>
               {pick(a.category.name, lang)}
             </Link>
           )}

@@ -7,7 +7,7 @@ export function entityHref(lang, e) {
   return href(lang, `/${e.type}/${e.slug}`);
 }
 export function articleHref(lang, a) {
-  return href(lang, `/noticias/${a.slug}`);
+  return href(lang, `/news/${a.slug}`);
 }
 
 /** Archive record card. `variant`: 'arch' (portrait arch frame) | 'wide' | 'text' */
@@ -19,7 +19,7 @@ export function EntityCard({ entity: e, lang, variant = 'wide', sizes = '(min-wi
       <Link href={entityHref(lang, e)} className="ecard__link">
         {variant !== 'text' && (
           <div className="ecard__media">
-            {e.image ? <Img src={e.image} alt={e.imageAlt || title} sizes={sizes} priority={priority} /> : <div className="ecard__placeholder" aria-hidden="true"><span className="display">{title.slice(0, 1)}</span></div>}
+            {e.image ? <Img src={e.image} alt={e.imageAlt || title} sizes={sizes} priority={priority} /> : <div className="ecard__placeholder" aria-hidden="true"><span className="display">{(title.match(/[\p{L}\p{N}]/u) || [''])[0]}</span></div>}
           </div>
         )}
         <div className="ecard__body">

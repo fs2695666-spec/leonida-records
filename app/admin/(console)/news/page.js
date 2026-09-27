@@ -13,7 +13,7 @@ export default async function NewsAdmin({ searchParams }) {
     <div className="page">
       <PageHeader
         title="The Leonida Times"
-        lead="Noticias publicadas automáticamente en la portada y en /noticias. Los borradores y las programadas no son públicas."
+        lead="Noticias publicadas automáticamente en la portada y en /news. Los borradores y las programadas no son públicas."
         actions={<>
           <Link className="abtn" href="/admin/news/categories">Secciones</Link>
           <Link className="abtn abtn--primary" href="/admin/news/new">Escribir noticia</Link>

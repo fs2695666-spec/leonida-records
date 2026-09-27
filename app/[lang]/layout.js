@@ -48,7 +48,7 @@ export default async function PublicLayout({ children, params }) {
     { key: 'characters', path: '/characters', label: dict.nav.characters },
     { key: 'locations', path: '/locations', label: dict.nav.locations },
     { key: 'vehicles', path: '/vehicles', label: dict.nav.vehicles },
-    { key: 'news', path: '/noticias', label: dict.nav.news },
+    { key: 'news', path: '/news', label: dict.nav.news },
     { key: 'media', path: '/media', label: dict.nav.media },
     { key: 'timeline', path: '/timeline', label: dict.nav.timeline },
   ];

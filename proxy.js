@@ -6,8 +6,8 @@ const COOKIE_OPTS = { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' };
 
 /**
  * 1. /admin/*  → refreshes the Supabase session cookie and requires a signed-in user.
- * 2. Public    → locale routing. Spanish lives at "/", other languages at /en, /pt, /fr.
- *                Unprefixed URLs are rewritten to the internal /es/* route.
+ * 2. Public    → locale routing. English lives at "/", Spanish at /es.
+ *                Unprefixed URLs are rewritten to the internal /en/* route.
  *                The last language explicitly visited is remembered in a cookie.
  */
 export async function proxy(request) {
@@ -16,7 +16,7 @@ export async function proxy(request) {
 
   const first = pathname.split('/')[1];
 
-  // /es/... is not canonical: redirect to the root version and remember Spanish.
+  // /en/... is not canonical: redirect to the root version and remember English.
   if (first === DEFAULT_LOCALE) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.slice(3) || '/';
@@ -28,14 +28,14 @@ export async function proxy(request) {
   if (isLocale(first)) {
     const res = NextResponse.next();
     // Only a real page load changes the remembered language. Background prefetches of
-    // /fr/... (still in flight after the visitor picked another language) must not.
+    // /es/... (still in flight after the visitor picked another language) must not.
     if (isDocumentRequest(request) && request.cookies.get(LOCALE_COOKIE)?.value !== first) {
       res.cookies.set(LOCALE_COOKIE, first, COOKIE_OPTS);
     }
     return res;
   }
 
-  // Unprefixed path: honour a remembered non-default language, otherwise serve Spanish.
+  // Unprefixed path: honour a remembered non-default language, otherwise serve English.
   const remembered = request.cookies.get(LOCALE_COOKIE)?.value;
   if (remembered && remembered !== DEFAULT_LOCALE && isLocale(remembered) && isDocumentRequest(request)) {
     const url = request.nextUrl.clone();

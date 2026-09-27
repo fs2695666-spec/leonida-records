@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAdmin, requireStaff } from '@/lib/auth';
 import { action, check, revalidatePublic } from '@/lib/admin/action';
 import { entitySchema, factSchema, relationSchema } from '@/lib/validation';
-import { autoTranslate, FIELDS } from '@/lib/translate';
+import { autoTranslate, FIELDS, fieldsFor } from '@/lib/translate';
 
 const translateMode = (opts) => (['missing', 'all', 'off'].includes(opts?.translate) ? opts.translate : 'missing');
 const pickFields = (row, f) => Object.fromEntries([...f.plain, ...f.rich].map((k) => [k, row[k] || {}]));
@@ -26,7 +26,8 @@ export async function saveEntity(input, opts) {
     if (releaseDate) metadata = { ...metadata, release_date: releaseDate };
     else { const { release_date: _r, ...rest } = metadata; metadata = rest; }
 
-    const tr = await autoTranslate(pickFields(row, FIELDS.entity), FIELDS.entity, translateMode(opts));
+    const ef = fieldsFor('entity', row);
+    const tr = await autoTranslate(pickFields(row, ef), ef, translateMode(opts));
     Object.assign(row, tr.record);
 
     const payload = { ...row, metadata };

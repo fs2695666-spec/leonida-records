@@ -30,7 +30,7 @@ export function TranslateTools() {
         setProgress(total);
         if (!r.data.remaining || !r.data.processed) break;
       }
-      if (total) toast(`${total} ${total === 1 ? 'elemento traducido' : 'elementos traducidos'} al inglés, portugués y francés`);
+      if (total) toast(`${total} ${total === 1 ? 'elemento traducido' : 'elementos traducidos'} (inglés ↔ español)`);
     } finally {
       setRunning(false);
       await load();
@@ -43,7 +43,7 @@ export function TranslateTools() {
   if (!status.configured) {
     return (
       <div className="translate-box">
-        <p><strong>Traducción automática desactivada.</strong> Añade la variable <code>DEEPL_API_KEY</code> en Vercel (cuenta gratuita de DeepL) y todo lo que escribas en español se traducirá solo al guardar.</p>
+        <p><strong>Traducción automática desactivada.</strong> Añade la variable <code>DEEPL_API_KEY</code> en Vercel (cuenta gratuita de DeepL) y todo lo que escribas en inglés se traducirá solo al español al guardar.</p>
       </div>
     );
   }

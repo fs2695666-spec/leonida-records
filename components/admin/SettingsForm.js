@@ -10,7 +10,7 @@ export function SettingsForm({ initial }) {
     hero_image: initial.hero_image || '', hero_video: initial.hero_video || '', release_date: initial.release_date || '',
     announcement: (initial.announcement && typeof initial.announcement === 'object') ? initial.announcement : {}, contact_email: initial.contact_email || '',
   });
-  const [lang, setLang] = useState('es');
+  const [lang, setLang] = useState('en');
   const [run, busy] = useAction();
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   return (
@@ -24,7 +24,7 @@ export function SettingsForm({ initial }) {
         </Field>
       </section>
       <section className="card">
-        <div className="card__head"><h2 className="card__title">Aviso superior</h2><LocaleTabs compact lang={lang} onChange={setLang} filled={['es', 'en', 'pt', 'fr'].filter((l) => form.announcement[l])} /></div>
+        <div className="card__head"><h2 className="card__title">Aviso superior</h2><LocaleTabs compact lang={lang} onChange={setLang} filled={['en', 'es'].filter((l) => form.announcement[l])} /></div>
         <TextInput label={`Texto (${lang.toUpperCase()})`} hint="Barra fina encima del menú. Déjalo vacío para ocultarla." multiline rows={2} maxLength={240}
           value={form.announcement[lang] || ''} onChange={(v) => setForm((f) => ({ ...f, announcement: { ...f.announcement, [lang]: v } }))} />
         <TextInput label="Email de contacto" type="email" value={form.contact_email} onChange={set('contact_email')} />

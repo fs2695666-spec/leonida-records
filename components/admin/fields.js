@@ -3,7 +3,7 @@ import { useId, useState } from 'react';
 import { slugify } from './ui';
 
 export const LANGS = [
-  { code: 'es', label: 'Español' }, { code: 'en', label: 'English' }, { code: 'pt', label: 'Português' }, { code: 'fr', label: 'Français' },
+  { code: 'en', label: 'English' }, { code: 'es', label: 'Español' },
 ];
 
 export function Field({ label, hint, error, children, required, id, className = '' }) {
@@ -57,7 +57,7 @@ export function LocaleTabs({ lang, onChange, filled = [], compact = false }) {
         <button key={l.code} type="button" role="tab" aria-selected={lang === l.code} onClick={() => onChange(l.code)}>
           <span className="ltabs__dot" data-on={filled.includes(l.code) || undefined} aria-hidden="true" />
           {compact ? l.code.toUpperCase() : l.label}
-          {l.code === 'es' && !compact && <small>base</small>}
+          {l.code === 'en' && !compact && <small>base</small>}
         </button>
       ))}
     </div>

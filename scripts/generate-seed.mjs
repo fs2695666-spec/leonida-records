@@ -28,7 +28,7 @@ out.push('\n-- Entities');
 seed.entities.forEach((e, i) => {
   const meta = { ...(e.map ? { map: e.map } : {}), ...(seed.releaseDates[e.key] ? { release_date: seed.releaseDates[e.key] } : {}) };
   out.push(`insert into public.entities (id, type, slug, status, title, eyebrow, short_description, description, quote, hero_image, hero_alt, video_url, tags, primary_source_id, published, featured, sort_order, metadata)
-values (${q(seedId(e.key))}, ${q(e.type)}, ${q(e.slug)}, ${q(e.status)}, ${j(e.title)}, ${j(e.eyebrow)}, ${j(e.short)}, ${j(e.desc)}, ${j(e.quote)}, ${q(e.image)}, ${q(e.image ? e.title.es : null)}, ${q(e.video_url || null)}, ${arr(e.tags)}, ${q(seedId(e.source))}, true, ${e.featured ? 'true' : 'false'}, ${i}, ${j(meta)})
+values (${q(seedId(e.key))}, ${q(e.type)}, ${q(e.slug)}, ${q(e.status)}, ${j(e.title)}, ${j(e.eyebrow)}, ${j(e.short)}, ${j(e.desc)}, ${j(e.quote)}, ${q(e.image)}, ${q(e.image ? (e.title.en || e.title.es) : null)}, ${q(e.video_url || null)}, ${arr(e.tags)}, ${q(seedId(e.source))}, true, ${e.featured ? 'true' : 'false'}, ${i}, ${j(meta)})
 on conflict (type, slug) do update set status = excluded.status, title = excluded.title, eyebrow = excluded.eyebrow, short_description = excluded.short_description, description = excluded.description, quote = excluded.quote, hero_image = excluded.hero_image, hero_alt = excluded.hero_alt, video_url = excluded.video_url, tags = excluded.tags, primary_source_id = excluded.primary_source_id, featured = excluded.featured, metadata = excluded.metadata;`);
 });
 
@@ -84,3 +84,72 @@ for (const [k, v] of Object.entries(seed.settings)) {
 out.push('\ncommit;');
 writeFileSync(new URL('../supabase/seed.sql', import.meta.url), out.join('\n') + '\n');
 console.log('supabase/seed.sql written');
+
+// ---------------------------------------------------------------------------------------------
+// supabase/update-2.5.sql — for sites installed before v2.5 (English as main language + vehicles).
+// Safe to run on a live database: it never overwrites content you created or edited.
+// ---------------------------------------------------------------------------------------------
+const schema = (await import('node:fs')).readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
+const block = (startMarker) => {
+  const i = schema.indexOf(startMarker);
+  if (i < 0) throw new Error(`schema block not found: ${startMarker}`);
+  const end = schema.indexOf('$$;', i);
+  return schema.slice(i, end + 3);
+};
+const up = [];
+up.push(`-- Leonida Records — update to v2.5
+-- English becomes the main language (Spanish second; Portuguese and French removed from the site)
+-- and the vehicle catalogue is added. Run once in Supabase → SQL Editor. Safe to run more than once.
+begin;
+
+-- 1. Localized values fall back to English first, then Spanish
+${block('create or replace function public.lr_pick(')}
+
+-- 2. Titles/names may be written in English or Spanish (before: Spanish was mandatory)
+do $$
+declare r record;
+begin
+  for r in
+    select conrelid::regclass as tbl, conname from pg_constraint
+    where contype = 'c'
+      and conrelid in ('public.entities'::regclass, 'public.facts'::regclass, 'public.categories'::regclass, 'public.articles'::regclass, 'public.timeline_events'::regclass)
+      and pg_get_constraintdef(oid) like '%->> ''es''%'
+  loop
+    execute format('alter table %s drop constraint %I', r.tbl, r.conname);
+  end loop;
+end $$;
+alter table public.entities        add constraint entities_title_check        check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0));
+alter table public.facts           add constraint facts_title_check           check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0));
+alter table public.categories      add constraint categories_name_check       check (public.lr_is_localized(name) and (length(coalesce(name ->> 'en', '')) > 0 or length(coalesce(name ->> 'es', '')) > 0));
+alter table public.articles        add constraint articles_title_check        check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0));
+alter table public.timeline_events add constraint timeline_events_title_check check (public.lr_is_localized(title) and (length(coalesce(title ->> 'en', '')) > 0 or length(coalesce(title ->> 'es', '')) > 0));
+
+-- 3. Activity log labels prefer English
+${block('create or replace function public.log_activity()')}
+
+-- 4. Search defaults to English
+drop function if exists public.search_archive(text, text, integer);
+${block('create or replace function public.search_archive(')}
+grant execute on function public.search_archive(text, text, integer) to anon, authenticated;
+
+-- 5. Correct name of the Ultimate Edition buggy (it was listed as "Dominator FX")
+update public.entities
+set slug = '67-vapid-dominator-buggy',
+    title = '{"en": "’67 Vapid Dominator Buggy"}'::jsonb,
+    short_description = short_description || ${j(seed.entities.find((e) => e.key === 'veh-vapid-dominator-fx').short)},
+    description = description || ${j(seed.entities.find((e) => e.key === 'veh-vapid-dominator-fx').desc)}
+where type = 'vehicles' and slug = '67-vapid-dominator-fx';
+
+-- 6. New sources`);
+for (const s of seed.sources.filter((x) => ['src-store-ultimate', 'src-gtaintel', 'src-editions', 'src-extended-look', 'src-videos', 'src-screens', 'src-gta6'].includes(x.key))) {
+  up.push(`insert into public.sources (id, name, publisher, kind, url, published_at) values (${q(seedId(s.key))}, ${q(s.name)}, ${q(s.publisher)}, ${q(s.kind)}, ${q(s.url)}, ${q(s.published_at)}) on conflict (id) do nothing;`);
+}
+up.push('\n-- 7. Vehicle catalogue (only adds vehicles that do not exist yet)');
+seed.entities.filter((e) => e.key.startsWith('veh-cat-')).forEach((e, i) => {
+  up.push(`insert into public.entities (id, type, slug, status, title, eyebrow, short_description, description, quote, tags, primary_source_id, published, featured, sort_order, metadata)
+values (${q(seedId(e.key))}, 'vehicles', ${q(e.slug)}, ${q(e.status)}, ${j(e.title)}, ${j(e.eyebrow)}, ${j(e.short)}, ${j(e.desc)}, '{}'::jsonb, ${arr(e.tags)}, (select id from public.sources where id = ${q(seedId(e.source))}), true, false, ${100 + i}, '{}'::jsonb)
+on conflict do nothing;`);
+});
+up.push('\ncommit;');
+writeFileSync(new URL('../supabase/update-2.5.sql', import.meta.url), up.join('\n') + '\n');
+console.log('supabase/update-2.5.sql written');

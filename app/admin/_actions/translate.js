@@ -1,19 +1,20 @@
 'use server';
 import { requireStaff } from '@/lib/auth';
 import { action, check, revalidatePublic, userError } from '@/lib/admin/action';
-import { AUTO_LANGS, FIELDS, isTranslateConfigured, translateRecord, TranslateError } from '@/lib/translate';
+import { AUTO_LANGS, FIELDS, fieldsFor, isTranslateConfigured, translateRecord, TranslateError } from '@/lib/translate';
 
 const TABLES = [
-  { table: 'entities', f: FIELDS.entity, label: (r) => r.title?.es },
-  { table: 'articles', f: FIELDS.article, label: (r) => r.title?.es },
-  { table: 'facts', f: FIELDS.fact, label: (r) => r.title?.es },
-  { table: 'timeline_events', f: FIELDS.timeline, label: (r) => r.title?.es },
-  { table: 'categories', f: FIELDS.category, label: (r) => r.name?.es },
+  { table: 'entities', f: FIELDS.entity, kind: 'entity', extra: ['type'], label: (r) => r.title?.en || r.title?.es },
+  { table: 'articles', f: FIELDS.article, label: (r) => r.title?.en || r.title?.es },
+  { table: 'facts', f: FIELDS.fact, label: (r) => r.title?.en || r.title?.es },
+  { table: 'timeline_events', f: FIELDS.timeline, label: (r) => r.title?.en || r.title?.es },
+  { table: 'categories', f: FIELDS.category, label: (r) => r.name?.en || r.name?.es },
 ];
 const filled = (v) => (typeof v === 'string' ? v.trim().length > 0 : Boolean(v && JSON.stringify(v).includes('"text":"')));
 
 function needs(row, f) {
-  return [...f.plain, ...f.rich].some((k) => filled(row[k]?.es) && AUTO_LANGS.some((l) => !filled(row[k]?.[l])));
+  // A field needs work when it has text in one language but not in the other.
+  return [...f.plain, ...f.rich].some((k) => AUTO_LANGS.filter((l) => filled(row[k]?.[l])).length === 1);
 }
 
 /** How many records still have untranslated fields. */
@@ -22,9 +23,9 @@ export async function translationStatus() {
     const { supabase } = await requireStaff();
     let pending = 0;
     for (const t of TABLES) {
-      const cols = ['id', ...t.f.plain, ...t.f.rich].join(',');
+      const cols = ['id', ...(t.extra || []), ...t.f.plain, ...t.f.rich].join(',');
       const rows = check(await supabase.from(t.table).select(cols));
-      pending += rows.filter((r) => needs(r, t.f)).length;
+      pending += rows.filter((r) => needs(r, t.kind ? fieldsFor(t.kind, r) : t.f)).length;
     }
     let usage = null;
     if (process.env.DEEPL_API_KEY && !process.env.DEEPL_API_URL) {
@@ -48,14 +49,15 @@ export async function translateMissingBatch() {
     let remaining = 0;
     const done = [];
     for (const t of TABLES) {
-      const cols = ['id', ...t.f.plain, ...t.f.rich].join(',');
-      const rows = check(await supabase.from(t.table).select(cols)).filter((r) => needs(r, t.f));
+      const cols = ['id', ...(t.extra || []), ...t.f.plain, ...t.f.rich].join(',');
+      const rows = check(await supabase.from(t.table).select(cols)).filter((r) => needs(r, t.kind ? fieldsFor(t.kind, r) : t.f));
       for (const r of rows) {
         if (processed >= LIMIT) { remaining += 1; continue; }
-        const record = Object.fromEntries([...t.f.plain, ...t.f.rich].map((k) => [k, r[k] || {}]));
+        const rf = t.kind ? fieldsFor(t.kind, r) : t.f;
+        const record = Object.fromEntries([...rf.plain, ...rf.rich].map((k) => [k, r[k] || {}]));
         let result;
         try {
-          result = await translateRecord(record, t.f, 'missing');
+          result = await translateRecord(record, rf, 'missing');
         } catch (e) {
           throw userError(e instanceof TranslateError ? `DeepL: ${e.message}.` : 'No se pudo conectar con DeepL.');
         }

@@ -163,7 +163,7 @@ export function EvidencePill({ level }) {
 }
 
 export function LangDots({ value }) {
-  const langs = ['es', 'en', 'pt', 'fr'];
+  const langs = ['en', 'es'];
   const filled = (v) => {
     if (!v) return false;
     if (typeof v === 'string') return v.trim().length > 0;

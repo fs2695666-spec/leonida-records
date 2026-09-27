@@ -2,12 +2,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LOCALES, LOCALE_META, stripLocale } from '@/lib/i18n';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_META, stripLocale } from '@/lib/i18n';
 import { Wordmark } from './Logo';
 import { CommandSearch } from './CommandSearch';
 
 function localized(lang, path) {
-  if (lang === 'es') return path;
+  if (lang === DEFAULT_LOCALE) return path;
   return path === '/' ? `/${lang}` : `/${lang}${path}`;
 }
 
@@ -42,8 +42,8 @@ export function Header({ lang, nav, homeHref, labels, searchLabels }) {
       {LOCALES.map((l) => (
         <li key={l}>
           {/* Full navigation on purpose: the proxy stores the chosen language in a cookie.
-              Spanish goes through /es so the proxy can switch the cookie back (then redirects to the root). */}
-          <a href={l === 'es' ? `/es${bare === '/' ? '' : bare}` : localized(l, bare)} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined} title={LOCALE_META[l].name}>
+              English goes through /en so the proxy can switch the cookie back (then redirects to the root). */}
+          <a href={`/${l}${bare === '/' ? '' : bare}`} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined} title={LOCALE_META[l].name}>
             {LOCALE_META[l].label}
           </a>
         </li>

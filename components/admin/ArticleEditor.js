@@ -36,7 +36,7 @@ function mergeTranslations(cur, res, mode) {
   }
   return next;
 }
-const LANG_NAMES = { en: 'inglés', pt: 'portugués', fr: 'francés' };
+const LANG_NAMES = { en: 'inglés', es: 'español' };
 const langList = (ls) => ls.map((l) => LANG_NAMES[l] || l).join(', ').replace(/, ([^,]*)$/, ' y $1');
 
 function initial(a, authorDefault) {
@@ -57,7 +57,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
   const confirm = useConfirm();
   const [run, busy] = useAction();
   const [form, setForm] = useState(() => initial(article, authorDefault));
-  const [lang, setLang] = useState('es');
+  const [lang, setLang] = useState('en');
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(article?.updated_at || null);
@@ -71,7 +71,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
   const setLoc = (field, v) => {
     setForm((f) => {
       const next = { ...f, [field]: { ...f[field], [lang]: v } };
-      if (field === 'title' && lang === 'es' && !slugLocked) next.slug = slugify(v);
+      if (field === 'title' && lang === 'en' && !slugLocked) next.slug = slugify(v);
       return next;
     });
     setDirty(true);
@@ -79,7 +79,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
 
   const save = useCallback(async (overrides = {}, { silent = false, translate = 'missing' } = {}) => {
     const f = { ...ref.current, ...overrides };
-    if (!f.title.es?.trim()) { if (!silent) toast('El titular en español es obligatorio', 'error'); return null; }
+    if (!(f.title.en?.trim() || f.title.es?.trim())) { if (!silent) toast('El titular en inglés es obligatorio', 'error'); return null; }
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.slug)) { if (!silent) toast('El slug no es válido', 'error'); return null; }
     setSaving(true);
     const msg = overrides.published === true
@@ -110,14 +110,14 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
   };
 
   const scheduled = form.published && form.published_at && form.published_at > new Date().toISOString();
-  const filledLangs = ['es', 'en', 'pt', 'fr'].filter((l) => filled(form.title[l]) && filled(form.body[l]));
+  const filledLangs = ['en', 'es'].filter((l) => filled(form.title[l]) && filled(form.body[l]));
 
   return (
     <div className="editor">
       <header className="editor__head">
         <div className="editor__crumbs"><Link href="/admin/news">The Leonida Times</Link> / {form.id ? 'Editar' : 'Nueva noticia'}</div>
         <div className="editor__titlebar">
-          <h1>{form.title.es || 'Nueva noticia'}</h1>
+          <h1>{form.title.en || form.title.es || 'Nueva noticia'}</h1>
           <div className="editor__meta">
             <StatusPill published={form.published} publishedAt={form.published_at} />
             <span className="editor__saved" aria-live="polite">{saving ? 'Guardando…' : dirty ? 'Cambios sin guardar' : savedAt ? <>Guardado <RelTime iso={savedAt} /></> : 'Sin guardar'}</span>
@@ -125,7 +125,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
         </div>
         <div className="editor__actions">
           {form.id && <a className="abtn abtn--ghost" href={`/admin/preview/article/${form.id}?lang=${lang}`} target="_blank" rel="noopener noreferrer">Vista previa</a>}
-          {form.id && form.published && !scheduled && <a className="abtn abtn--ghost" href={`/noticias/${form.slug}`} target="_blank" rel="noopener noreferrer">Ver en la web ↗</a>}
+          {form.id && form.published && !scheduled && <a className="abtn abtn--ghost" href={`/news/${form.slug}`} target="_blank" rel="noopener noreferrer">Ver en la web ↗</a>}
           <button type="button" className="abtn" onClick={() => save()} disabled={busy || saving}>{form.published ? 'Guardar cambios' : 'Guardar borrador'}</button>
           {form.published
             ? <button type="button" className="abtn abtn--ghost" onClick={() => save({ published: false })} disabled={busy || saving}>Despublicar</button>
@@ -139,12 +139,12 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
             <div className="card__head">
               <LocaleTabs lang={lang} onChange={setLang} filled={filledLangs} />
             </div>
-            {lang !== 'es' && (translateEnabled
-              ? <p className="notice">Lo que esté vacío se traduce solo desde el español al guardar. Si corriges algo aquí, se respeta tu versión.</p>
-              : !filled(form.title[lang]) && <p className="notice">Sin traducción: en /{lang}/noticias se mostrará la versión española.</p>)}
-            <textarea className="headline-input" rows={2} value={form.title[lang] || ''} onChange={(e) => setLoc('title', e.target.value)} placeholder={lang === 'es' ? 'Titular' : (form.title.es || 'Titular')} aria-label="Titular" maxLength={200} />
-            <textarea className="standfirst-input" rows={2} value={form.excerpt[lang] || ''} onChange={(e) => setLoc('excerpt', e.target.value)} placeholder={lang === 'es' ? 'Entradilla: una o dos frases que resumen la noticia' : (form.excerpt.es || 'Entradilla')} aria-label="Entradilla" maxLength={500} />
-            <RichEditor key={`body-${lang}`} value={form.body[lang] || null} onChange={(v) => setLoc('body', v)} placeholder="Escribe la noticia. Usa H2 para secciones, cita las fuentes con enlaces…" label={`Cuerpo (${lang})`} />
+            {lang !== 'en' && (translateEnabled
+              ? <p className="notice">Lo que esté vacío en español se traduce solo desde el inglés al guardar. Si corriges algo aquí, se respeta tu versión.</p>
+              : !filled(form.title[lang]) && <p className="notice">Sin traducción: en /es/news se mostrará la versión en inglés.</p>)}
+            <textarea className="headline-input" rows={2} value={form.title[lang] || ''} onChange={(e) => setLoc('title', e.target.value)} placeholder={lang === 'en' ? 'Headline' : (form.title.en || 'Titular')} aria-label="Titular" maxLength={200} />
+            <textarea className="standfirst-input" rows={2} value={form.excerpt[lang] || ''} onChange={(e) => setLoc('excerpt', e.target.value)} placeholder={lang === 'en' ? 'Standfirst: one or two sentences that sum up the story' : (form.excerpt.en || 'Entradilla')} aria-label="Entradilla" maxLength={500} />
+            <RichEditor key={`body-${lang}`} value={form.body[lang] || null} onChange={(v) => setLoc('body', v)} placeholder={lang === 'en' ? 'Write the story. Use H2 for sections and link your sources…' : 'Escribe la noticia. Usa H2 para secciones, cita las fuentes con enlaces…'} label={`Cuerpo (${lang})`} />
           </section>
 
           <section className="card">
@@ -154,9 +154,9 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
                 <TextInput label="Título SEO" hint="Opcional. Si está vacío se usa el titular." value={form.seo_title[lang] || ''} onChange={(v) => setLoc('seo_title', v)} maxLength={80} />
                 <TextInput label="Descripción SEO" hint="Opcional. Si está vacía se usa la entradilla." multiline rows={2} value={form.seo_description[lang] || ''} onChange={(v) => setLoc('seo_description', v)} maxLength={200} />
                 <div className="serp">
-                  <span className="serp__url">…/{lang === 'es' ? '' : `${lang}/`}noticias/{form.slug || 'slug'}</span>
-                  <span className="serp__title">{form.seo_title[lang] || form.title[lang] || form.title.es || 'Titular'} — Leonida Records</span>
-                  <span className="serp__desc">{(form.seo_description[lang] || form.excerpt[lang] || form.excerpt.es || '').slice(0, 170)}</span>
+                  <span className="serp__url">…/{lang === 'en' ? '' : `${lang}/`}news/{form.slug || 'slug'}</span>
+                  <span className="serp__title">{form.seo_title[lang] || form.title[lang] || form.title.en || 'Titular'} — Leonida Records</span>
+                  <span className="serp__desc">{(form.seo_description[lang] || form.excerpt[lang] || form.excerpt.en || '').slice(0, 170)}</span>
                 </div>
               </>
             )}
@@ -171,7 +171,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
             <Field label="Fecha de publicación" hint="Vacía = en el momento de publicar. Una fecha futura la programa.">
               <input type="datetime-local" className="input" value={toLocal(form.published_at)} onChange={(e) => set({ published_at: fromLocal(e.target.value) })} />
             </Field>
-            <SlugInput value={form.slug} onChange={(v) => set({ slug: v })} source={form.title.es} locked={slugLocked} onLock={setSlugLocked} prefix="/noticias/" />
+            <SlugInput value={form.slug} onChange={(v) => set({ slug: v })} source={form.title.en || form.title.es} locked={slugLocked} onLock={setSlugLocked} prefix="/news/" />
           </section>
 
           <section className="card">
@@ -183,7 +183,7 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
 
           <section className="card">
             <h2 className="card__title">Clasificación</h2>
-            <Select label="Sección" value={form.category_id} onChange={(v) => set({ category_id: v })} options={categories.map((c) => ({ value: c.id, label: c.name?.es }))} placeholder="— Sin sección —" />
+            <Select label="Sección" value={form.category_id} onChange={(v) => set({ category_id: v })} options={categories.map((c) => ({ value: c.id, label: (c.name?.en || c.name?.es) }))} placeholder="— Sin sección —" />
             <Select label="Evidencia" value={form.evidence} onChange={(v) => set({ evidence: v })} options={Object.entries(EVIDENCE_LABELS).map(([value, label]) => ({ value, label }))} hint={EVIDENCE_HELP[form.evidence]} />
             <div><EvidencePill level={form.evidence} /></div>
             <TextInput label="Firma" value={form.author_name} onChange={(v) => set({ author_name: v })} maxLength={120} placeholder="Redacción Leonida Records" />
@@ -196,11 +196,11 @@ export function ArticleEditor({ article, categories, sourceOptions, entityOption
             <h2 className="card__title">Idiomas</h2>
             {translateEnabled ? (
               <>
-                <p className="field__hint">Traducción automática activada: al guardar se rellenan solos el inglés, el portugués y el francés que estén vacíos.</p>
-                <button type="button" className="abtn abtn--small" disabled={busy || saving || !form.title.es?.trim()} onClick={async () => {
-                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán titular, entradilla, cuerpo y SEO en inglés, portugués y francés por una traducción nueva del español.', confirmLabel: 'Traducir' }))) return;
+                <p className="field__hint">Escribe en inglés. Traducción automática activada: al guardar, lo que esté vacío en español se rellena solo. Puedes revisarlo en la pestaña Español.</p>
+                <button type="button" className="abtn abtn--small" disabled={busy || saving || !form.title.en?.trim()} onClick={async () => {
+                  if (!(await confirm({ title: '¿Volver a traducir todo?', message: 'Se reemplazarán titular, entradilla, cuerpo y SEO en español por una traducción nueva del inglés.', confirmLabel: 'Traducir' }))) return;
                   save({}, { translate: 'all' });
-                }}>Volver a traducir desde el español</button>
+                }}>Volver a traducir al español</button>
               </>
             ) : (
               <p className="field__hint">Traducción automática desactivada. Añade <code>DEEPL_API_KEY</code> en Vercel para activarla (ver README).</p>
